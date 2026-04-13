@@ -296,12 +296,14 @@ function buildMessage(){
     "gs_h":X,"gc_h":X,"o25_h":X,"btts_h":X,"cs_h":X,
     "gs_a":X,"gc_a":X,"o25_a":X,"btts_a":X,"cs_a":X,
     "h2h_avg":X,"h2h_o25":X,"h2h_btts":X,
+    "forma_h":"XXXXX","gf5_h":X,"gs5_h":X,
+    "forma_a":"XXXXX","gf5_a":X,"gs5_a":X,
     ${mgtKeys},
     ${mg1tKeys},
     ${mg2tKeys},
     "note":"..."
   }`).join(',\n');
-  msg+=`\n]\n\nDove per ogni partita:\n- p1/px/p2 = probabilità % vittoria casa/pareggio/ospite (somma ~100)\n- gs_h/gc_h = gol segnati/subiti IN CASA; o25_h/btts_h/cs_h = % Over2.5/BTTS/CS IN CASA\n- gs_a/gc_a = gol segnati/subiti IN TRASFERTA; o25_a/btts_a/cs_a = % Over2.5/BTTS/CS IN TRASFERTA\n- h2h_avg/h2h_o25/h2h_btts = media gol/Over2.5%/BTTS% precedenti\nMultigol totale partita (gol complessivi entrambe le squadre):\n${mgtDesc}\n  (ogni range X-Y = probabilità che la partita finisca con almeno X e al massimo Y gol in totale; le % non devono sommare a 100)\nMultigol per tempo:\n${mg1tDesc}\n${mg2tDesc}\n  (mg1t/mg2t = gol totali segnati in quel tempo, somma ~100 per gruppo)\n- note = breve nota in italiano`;
+  msg+=`\n]\n\nDove per ogni partita:\n- p1/px/p2 = probabilità % vittoria casa/pareggio/ospite (somma ~100)\n- gs_h/gc_h = gol segnati/subiti IN CASA; o25_h/btts_h/cs_h = % Over2.5/BTTS/CS IN CASA\n- gs_a/gc_a = gol segnati/subiti IN TRASFERTA; o25_a/btts_a/cs_a = % Over2.5/BTTS/CS IN TRASFERTA\n- h2h_avg/h2h_o25/h2h_btts = media gol/Over2.5%/BTTS% precedenti\n- forma_h = ultime 5 partite squadra CASA (es. "VVPDV", V=vinta P=pareggio D=sconfitta, ordine dal più recente)\n- gf5_h = gol fatti nelle ultime 5 partite totali squadra CASA\n- gs5_h = gol subiti nelle ultime 5 partite totali squadra CASA\n- forma_a = ultime 5 partite squadra OSPITE (stesso formato)\n- gf5_a = gol fatti nelle ultime 5 partite totali squadra OSPITE\n- gs5_a = gol subiti nelle ultime 5 partite totali squadra OSPITE\nMultigol totale partita (gol complessivi entrambe le squadre):\n${mgtDesc}\n  (ogni range X-Y = probabilità che la partita finisca con almeno X e al massimo Y gol in totale; le % non devono sommare a 100)\nMultigol per tempo:\n${mg1tDesc}\n${mg2tDesc}\n  (mg1t/mg2t = gol totali segnati in quel tempo, somma ~100 per gruppo)\n- note = breve nota in italiano`;
   return msg;
 }
 function updatePreview(){
@@ -407,6 +409,20 @@ function calcMgHalfValue(id,half,i){
   else if(diff>=2){res.textContent=`≈ +${diff}%`;res.style.color='var(--amber)';}
   else if(diff>=0){res.textContent='~';res.style.color='var(--amber)';}
   else{res.textContent=`✗ ${diff}%`;res.style.color='var(--red)';}
+}
+
+function renderFormaPills(forma){
+  if(!forma||forma==='XXXXX')return'<span style="font-size:11px;color:var(--muted)">—</span>';
+  return forma.toUpperCase().split('').map(c=>{
+    const col=c==='V'?'#34d399':c==='P'?'#fbbf24':'#f87171';
+    const bg=c==='V'?'rgba(52,211,153,0.18)':c==='P'?'rgba(251,191,36,0.18)':'rgba(248,113,113,0.18)';
+    return`<span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;font-size:11px;font-weight:700;background:${bg};color:${col}">${c}</span>`;
+  }).join('');
+}
+
+function calcPuntiForma(forma){
+  if(!forma||forma==='XXXXX')return null;
+  return forma.toUpperCase().split('').reduce((t,c)=>t+(c==='V'?3:c==='P'?1:0),0);
 }
 
 function renderTabContent(row){
@@ -520,6 +536,40 @@ function renderTabContent(row){
         <div class="h2h-item"><label>BTTS % H2H</label><input class="num-input ${d.h2h_btts!==undefined?'ai-filled':''}" type="number" id="h2h_btts_${id}" value="${d.h2h_btts??''}" step="1" placeholder="—" oninput="calcTab(${id})"></div>
       </div>
     </div>
+    <!-- FORMA RECENTE -->
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:500">Forma recente — ultime 5 partite</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div>
+          <div style="font-size:11px;color:var(--accent2);margin-bottom:6px;font-weight:600" id="forma_hn_${id}">${hn}</div>
+          <div style="display:flex;gap:4px;margin-bottom:8px" id="forma_h_pills_${id}">${renderFormaPills(d.forma_h)}</div>
+          <div style="display:flex;gap:10px">
+            <div><div style="font-size:10px;color:var(--muted);margin-bottom:3px">GF ultime 5</div>
+              <input class="num-input ${d.gf5_h!==undefined?'ai-filled':''}" type="number" id="gf5_h_${id}" value="${d.gf5_h??''}" step="0.1" min="0" max="30" placeholder="—" oninput="calcTab(${id})" style="width:70px"></div>
+            <div><div style="font-size:10px;color:var(--muted);margin-bottom:3px">GS ultime 5</div>
+              <input class="num-input ${d.gs5_h!==undefined?'ai-filled':''}" type="number" id="gs5_h_${id}" value="${d.gs5_h??''}" step="0.1" min="0" max="30" placeholder="—" oninput="calcTab(${id})" style="width:70px"></div>
+            <div style="display:flex;flex-direction:column;justify-content:flex-end;padding-bottom:6px">
+              <span style="font-size:10px;color:var(--muted)">Punti forma</span>
+              <span style="font-family:'DM Mono',monospace;font-size:16px;font-weight:700" id="forma_pts_h_${id}" style="color:var(--muted)">—</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--green);margin-bottom:6px;font-weight:600" id="forma_an_${id}">${an}</div>
+          <div style="display:flex;gap:4px;margin-bottom:8px" id="forma_a_pills_${id}">${renderFormaPills(d.forma_a)}</div>
+          <div style="display:flex;gap:10px">
+            <div><div style="font-size:10px;color:var(--muted);margin-bottom:3px">GF ultime 5</div>
+              <input class="num-input ${d.gf5_a!==undefined?'ai-filled':''}" type="number" id="gf5_a_${id}" value="${d.gf5_a??''}" step="0.1" min="0" max="30" placeholder="—" oninput="calcTab(${id})" style="width:70px"></div>
+            <div><div style="font-size:10px;color:var(--muted);margin-bottom:3px">GS ultime 5</div>
+              <input class="num-input ${d.gs5_a!==undefined?'ai-filled':''}" type="number" id="gs5_a_${id}" value="${d.gs5_a??''}" step="0.1" min="0" max="30" placeholder="—" oninput="calcTab(${id})" style="width:70px"></div>
+            <div style="display:flex;flex-direction:column;justify-content:flex-end;padding-bottom:6px">
+              <span style="font-size:10px;color:var(--muted)">Punti forma</span>
+              <span style="font-family:'DM Mono',monospace;font-size:16px;font-weight:700" id="forma_pts_a_${id}" style="color:var(--muted)">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     ${d.note?`<div class="ai-note" style="margin-top:12px">📌 ${d.note}</div>`:''}
   </div>
 
@@ -562,15 +612,17 @@ function renderTabContent(row){
       <span style="font-size:13px;font-weight:600;color:var(--accent2)">Pronostico consigliato</span>
       <span style="font-size:9px;background:rgba(108,99,255,0.2);color:var(--accent2);padding:2px 7px;border-radius:10px;font-weight:500;letter-spacing:.05em">BILANCIATO</span>
     </div>
-    <div id="prono_main_${id}" style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px">—</div>
-    <div id="prono_why_${id}" style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:10px">—</div>
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <div id="prono_main_${id}" style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px">—</div>
+    <div id="prono_why_${id}" style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:12px">—</div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
       <span style="font-size:11px;color:var(--muted)">Quota attesa:</span>
       <span id="prono_quota_${id}" style="font-family:'DM Mono',monospace;font-size:13px;color:var(--amber);font-weight:600">—</span>
-      <span style="font-size:11px;color:var(--muted);margin-left:8px">Alternativa:</span>
-      <span id="prono_alt_${id}" style="font-size:12px;color:var(--green);font-weight:500">—</span>
     </div>
-    <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(108,99,255,0.2)">
+    <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 12px;margin-bottom:14px">
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px">Alternativa suggerita</div>
+      <div id="prono_alt_${id}" style="font-size:12px;color:var(--green);font-weight:500">—</div>
+    </div>
+    <div style="padding-top:12px;border-top:1px solid rgba(108,99,255,0.2)">
       <button onclick="openStoricoModal(${id})" style="background:linear-gradient(135deg,var(--accent),#8b5cf6);color:#fff;border:none;border-radius:8px;padding:10px 18px;font-size:13px;font-weight:600;font-family:'Sora',sans-serif;cursor:pointer;display:flex;align-items:center;gap:8px">
         📒 Aggiungi allo storico
       </button>
@@ -620,7 +672,34 @@ function calcTab(id){
   const gs_a=gv(id,'gs_a'),gc_a=gv(id,'gc_a'),o25_a=gv(id,'o25_a'),btts_a=gv(id,'btts_a'),cs_a=gv(id,'cs_a');
   const h2h_avg=gv(id,'h2h_avg'),h2h_o25=gv(id,'h2h_o25'),h2h_btts=gv(id,'h2h_btts');
   const lv=parseFloat(document.getElementById('comp_'+id)?.value)||1.00;
-  const lam_h=(gs_h+gc_a)/2,lam_a=(gs_a+gc_h)/2,lam_tot=lam_h+lam_a;
+
+  // Forma recente
+  const gf5_h=gv(id,'gf5_h'), gs5_h=gv(id,'gs5_h');
+  const gf5_a=gv(id,'gf5_a'), gs5_a=gv(id,'gs5_a');
+  const d=matchData[id]||{};
+  const ptsH=calcPuntiForma(d.forma_h), ptsA=calcPuntiForma(d.forma_a);
+
+  // Aggiorna pills e punti forma in UI
+  const pillsH=document.getElementById(`forma_h_pills_${id}`);
+  const pillsA=document.getElementById(`forma_a_pills_${id}`);
+  if(pillsH)pillsH.innerHTML=renderFormaPills(d.forma_h);
+  if(pillsA)pillsA.innerHTML=renderFormaPills(d.forma_a);
+  const ptHEl=document.getElementById(`forma_pts_h_${id}`);
+  const ptAEl=document.getElementById(`forma_pts_a_${id}`);
+  if(ptHEl){ptHEl.textContent=ptsH!==null?ptsH+'/15':'—';ptHEl.style.color=ptsH>=10?'var(--green)':ptsH>=6?'var(--amber)':'var(--red)';}
+  if(ptAEl){ptAEl.textContent=ptsA!==null?ptsA+'/15':'—';ptAEl.style.color=ptsA>=10?'var(--green)':ptsA>=6?'var(--amber)':'var(--red)';}
+
+  // Lambda stagionale
+  const lam_h_st=(gs_h+gc_a)/2, lam_a_st=(gs_a+gc_h)/2;
+  // Lambda forma (gol per partita ultimi 5)
+  const lam_h_f5=gf5_h>0?gf5_h/5:lam_h_st;
+  const lam_a_f5=gf5_a>0?gf5_a/5:lam_a_st;
+  // Lambda blended: 50% stagionale + 50% forma recente (se disponibile)
+  const hasFormaH=gf5_h>0, hasFormaA=gf5_a>0;
+  const lam_h=hasFormaH?(lam_h_st*0.5+lam_h_f5*0.5):lam_h_st;
+  const lam_a=hasFormaA?(lam_a_st*0.5+lam_a_f5*0.5):lam_a_st;
+  const lam_tot=lam_h+lam_a;
+
   function blend(pois,s1,s2,h2h){return Math.min((pois*0.35+s1/100*0.30+s2/100*0.25+h2h/100*0.10)*lv*100,97);}
 
   const pO15=clamp(blend(1-cdf(1,lam_tot),Math.min(o25_h+18,100),Math.min(o25_a+18,100),Math.min(h2h_o25+18,100)),3,97);
@@ -632,6 +711,29 @@ function calcTab(id){
   const pBTTS=clamp(blend((1-cdf(0,lam_h))*(1-cdf(0,lam_a)),btts_h,btts_a,h2h_btts),3,97);
   const pNG=clamp(100-pBTTS,3,97);
   const pBO=clamp(Math.round(pBTTS*pO25/100*1.05),3,95);
+
+  // Probabilità 1X2 base da Poisson
+  let p1_raw=0,px_raw=0,p2_raw=0;
+  for(let h=0;h<=7;h++){for(let a=0;a<=7;a++){const p=pmf(h,lam_h)*pmf(a,lam_a);if(h>a)p1_raw+=p;else if(h===a)px_raw+=p;else p2_raw+=p;}}
+  // Bonus forma sulla probabilità 1X2 (+5% se forma > 10/15)
+  let bonusH=0, bonusA=0;
+  if(ptsH!==null&&ptsH>=10) bonusH=5;
+  if(ptsH!==null&&ptsH>=13) bonusH=8;
+  if(ptsA!==null&&ptsA>=10) bonusA=5;
+  if(ptsA!==null&&ptsA>=13) bonusA=8;
+  // Applica bonus e normalizza
+  let p1_adj=p1_raw*100+bonusH, p2_adj=p2_raw*100+bonusA;
+  const tot_adj=p1_adj+px_raw*100+p2_adj;
+  const p1_fin=clamp(p1_adj/tot_adj*100,3,94);
+  const px_fin=clamp(px_raw*100/tot_adj*100,3,60);
+  const p2_fin=clamp(p2_adj/tot_adj*100,3,94);
+
+  // Aggiorna banner 1X2 con valori forma-corretti
+  ['p1','px','p2'].forEach((k,i)=>{
+    const val=[p1_fin,px_fin,p2_fin][i];
+    const el=document.getElementById(`x12_${['p1','px','p2'][i]}_${id}`);
+    if(el)el.textContent=Math.round(val)+'%';
+  });
 
   const mkts=[
     {name:'Over 1.5',p:pO15},{name:'Over 2.5',p:pO25},{name:'Over 3.5',p:pO35},
@@ -645,11 +747,6 @@ function calcTab(id){
   if(mg)mg.innerHTML=mkts.map((m,i)=>{const[sl,sc]=sig(m.p);return`<div class="mkt" id="mkt_${id}_${i}" onclick="selectMkt(${id},${i})"><div class="mkt-name">${m.name}</div><div class="mkt-pct">${m.p}%</div><span class="mkt-sig ${sc}">${sl}</span></div>`;}).join('');
 
   rebuildValueRows(id,mkts);
-
-  // aggiorna 1X2
-  const d=matchData[id]||{};
-  const upd=(eid,val)=>{const el=document.getElementById(eid);if(el&&val!==undefined)el.textContent=val+'%';};
-  upd('x12_p1_'+id,d.p1);upd('x12_px_'+id,d.px);upd('x12_p2_'+id,d.p2);
 
   // aggiorna multigol totale partita
   MG_TOTALE.forEach((m,i)=>{
@@ -686,7 +783,8 @@ function calcTab(id){
   if(vt&&vs){if(score>=70){vt.textContent='Segnale forte';vs.style.color='var(--green)';}else if(score>=50){vt.textContent='Segnale moderato';vs.style.color='var(--amber)';}else{vt.textContent='Segnale debole';vs.style.color='var(--red)';}vs.textContent=score+'/100';}
   const sel=document.getElementById('comp_'+id);
   const lname=sel?sel.options[sel.selectedIndex].text:'—';
-  const vl=document.getElementById('vlega_'+id);if(vl)vl.textContent=lname+' · λH '+lam_h.toFixed(2)+' λA '+lam_a.toFixed(2);
+  const formaTag=(bonusH||bonusA)?` · 🔥 Forma: ${bonusH?'+'+bonusH+'% H':''}${bonusA?' +'+bonusA+'% A':''}`.trim():'';
+  const vl=document.getElementById('vlega_'+id);if(vl)vl.textContent=lname+' · λH '+lam_h.toFixed(2)+' λA '+lam_a.toFixed(2)+formaTag;
   const sorted=[...mkts].sort((a,b)=>b.p-a.p);
   // Mercato più interessante = MEDIO (50-59%) poi 50/50 (42-49%) — zona value reale
   const interesting=mkts.filter(m=>m.p>=42&&m.p<60).sort((a,b)=>Math.abs(a.p-53)-Math.abs(b.p-53));
@@ -699,13 +797,15 @@ function calcTab(id){
   if(o25_h<45||o25_a<45)warns.push('Over 2.5 basso per una squadra — verifica dato contestuale.');
   if(cs_h>40||cs_a>40)warns.push('Clean sheet alto — considera Under o No BTTS.');
   if(lam_tot<2.0)warns.push('Lambda basso ('+lam_tot.toFixed(2)+') — partita potenzialmente chiusa.');
+  if(bonusH>=8)warns.push('🔥 '+( document.getElementById('th_'+id)?.value||'Casa')+' in forma eccellente ('+ptsH+'/15 pt) — boost +'+bonusH+'% a vittoria casa.');
+  if(bonusA>=8)warns.push('🔥 '+(document.getElementById('ta_'+id)?.value||'Ospite')+' in forma eccellente ('+ptsA+'/15 pt) — boost +'+bonusA+'% a vittoria ospite.');
   const ww=document.getElementById('vwarn_'+id);if(ww)ww.innerHTML=warns.map(w=>`<div class="warn">${w}</div>`).join('');
 
   // RISULTATI ESATTI
   calcRisultatiEsatti(id, lam_h, lam_a, document.getElementById('th_'+id)?.value||'Casa', document.getElementById('ta_'+id)?.value||'Ospite');
 
   // PRONOSTICO BILANCIATO
-  calcPronostico(id, {p1:d.p1,px:d.px,p2:d.p2,pO25,pO35,pU25,pBTTS,pNG,pBO,lam_h,lam_a,lam_tot,cs_h,cs_a,btts_h,btts_a,o25_h,o25_a,h2h_o25,h2h_btts,mg2t_12:d.mg2t_12,mg2t_01:d.mg2t_01,mg1t_01:d.mg1t_01,mg1t_12:d.mg1t_12,hn:document.getElementById('th_'+id)?.value||'Casa',an:document.getElementById('ta_'+id)?.value||'Ospite'});
+  calcPronostico(id, {p1:p1_fin,px:px_fin,p2:p2_fin,pO25,pO35,pU25,pBTTS,pNG,pBO,lam_h,lam_a,lam_tot,cs_h,cs_a,btts_h,btts_a,o25_h,o25_a,h2h_o25,h2h_btts,mg2t_12:d.mg2t_12,mg2t_01:d.mg2t_01,mg1t_01:d.mg1t_01,mg1t_12:d.mg1t_12,ptsH,ptsA,bonusH,bonusA,hn:document.getElementById('th_'+id)?.value||'Casa',an:document.getElementById('ta_'+id)?.value||'Ospite'});
 }
 
 function calcRisultatiEsatti(id, lam_h, lam_a, hn, an){
@@ -823,13 +923,17 @@ function calcPronostico(id, p){
       if(extra.lam_h>extra.lam_a) reasons.push(`⚽ Lambda offensivo casa (${extra.lam_h.toFixed(2)}) superiore all'ospite (${extra.lam_a.toFixed(2)}): ${p.hn} produce più gol attesi.`);
       if(extra.cs_h>=30) reasons.push(`🛡️ ${p.hn} mantiene la porta inviolata nel ${extra.cs_h}% delle gare in casa — difesa affidabile.`);
       if(extra.p2<35) reasons.push(`📉 Vittoria ospite poco probabile (${extra.p2}%) — ospite debole in trasferta.`);
-      if(extra.p1-extra.p2>=15) reasons.push(`↗️ Vantaggio casa netto di ${extra.p1-extra.p2} punti percentuali rispetto alla vittoria ospite.`);
+      if(extra.p1-extra.p2>=15) reasons.push(`↗️ Vantaggio casa netto di ${Math.round(extra.p1-extra.p2)} punti percentuali rispetto alla vittoria ospite.`);
+      if(extra.ptsH!==null&&extra.ptsH>=10) reasons.push(`🔥 Forma eccellente: ${p.hn} ha ${extra.ptsH}/15 punti nelle ultime 5 — boost +${extra.bonusH}% incluso nel calcolo.`);
+      else if(extra.ptsH!==null&&extra.ptsH<=4) reasons.push(`❄️ Forma preoccupante: ${p.hn} ha solo ${extra.ptsH}/15 punti nelle ultime 5 — attenzione.`);
     }
     else if(type==='vittoria_a'){
       reasons.push(`📊 Probabilità stimata ${prob}% (zona ${zona}) — quota attesa ~${quotaEst}.`);
       if(extra.lam_a>extra.lam_h) reasons.push(`⚽ Lambda offensivo ospite (${extra.lam_a.toFixed(2)}) superiore alla casa (${extra.lam_h.toFixed(2)}): ${p.an} produce più gol attesi.`);
       if(extra.cs_a>=25) reasons.push(`🛡️ ${p.an} mantiene la porta inviolata nel ${extra.cs_a}% delle gare in trasferta.`);
       if(extra.p1<35) reasons.push(`📉 La vittoria casa è poco probabile (${extra.p1}%) — casa debole o ospite molto più forte.`);
+      if(extra.ptsA!==null&&extra.ptsA>=10) reasons.push(`🔥 Forma eccellente: ${p.an} ha ${extra.ptsA}/15 punti nelle ultime 5 — boost +${extra.bonusA}% incluso nel calcolo.`);
+      else if(extra.ptsA!==null&&extra.ptsA<=4) reasons.push(`❄️ Forma preoccupante: ${p.an} ha solo ${extra.ptsA}/15 punti nelle ultime 5 — attenzione.`);
     }
     else if(type==='pareggio'){
       reasons.push(`📊 Pareggio al ${prob}% (zona ${zona}) — quota attesa ~${quotaEst}.`);
@@ -893,36 +997,48 @@ function calcPronostico(id, p){
     p1:p.p1,p2:p.p2,px:p.px,
     mg1t_12:p.mg1t_12||0,mg2t_12:p.mg2t_12||0,
     mg1t_01:p.mg1t_01||0,mg2t_01:p.mg2t_01||0,
+    ptsH:p.ptsH,ptsA:p.ptsA,bonusH:p.bonusH||0,bonusA:p.bonusA||0,
   };
 
+  // Priorità mercati: 1=massima (1X2, Over/Under), 2=media (BTTS), 3=bassa (multigol per tempo)
   const candidates=[];
-  if(p.p1>=42&&p.p1<=65) candidates.push({name:`Vittoria ${p.hn}`,prob:p.p1,quotaEst:(100/p.p1).toFixed(2),type:'vittoria_h'});
-  if(p.px>=30&&p.px<=49) candidates.push({name:'Pareggio',prob:p.px,quotaEst:(100/p.px).toFixed(2),type:'pareggio'});
-  if(p.p2>=42&&p.p2<=65) candidates.push({name:`Vittoria ${p.an}`,prob:p.p2,quotaEst:(100/p.p2).toFixed(2),type:'vittoria_a'});
-  if(p.pO25>=42&&p.pO25<=65) candidates.push({name:'Over 2.5',prob:p.pO25,quotaEst:(100/p.pO25).toFixed(2),type:'over25'});
-  if(p.pU25>=42&&p.pU25<=65) candidates.push({name:'Under 2.5',prob:p.pU25,quotaEst:(100/p.pU25).toFixed(2),type:'under25'});
-  if(p.pBTTS>=42&&p.pBTTS<=65) candidates.push({name:'BTTS (GG)',prob:p.pBTTS,quotaEst:(100/p.pBTTS).toFixed(2),type:'btts'});
-  if(p.pNG>=42&&p.pNG<=65) candidates.push({name:'No BTTS',prob:p.pNG,quotaEst:(100/p.pNG).toFixed(2),type:'nobtts'});
-  if(p.pO35>=30&&p.pO35<=50) candidates.push({name:'Over 3.5',prob:p.pO35,quotaEst:(100/p.pO35).toFixed(2),type:'over35'});
-  if(p.mg2t_12>=42&&p.mg2t_12<=62) candidates.push({name:'Multigol 2T: 1-2 gol',prob:p.mg2t_12,quotaEst:((100/p.mg2t_12)*1.05).toFixed(2),type:'mg2t12'});
-  if(p.mg1t_01>=42&&p.mg1t_01<=65) candidates.push({name:'Multigol 1T: 0-1 gol',prob:p.mg1t_01,quotaEst:((100/p.mg1t_01)*1.05).toFixed(2),type:'mg1t01'});
+  if(p.p1>=42&&p.p1<=65) candidates.push({name:`Vittoria ${p.hn}`,prob:p.p1,quotaEst:(100/p.p1).toFixed(2),type:'vittoria_h',priority:1});
+  if(p.px>=30&&p.px<=49) candidates.push({name:'Pareggio',prob:p.px,quotaEst:(100/p.px).toFixed(2),type:'pareggio',priority:1});
+  if(p.p2>=42&&p.p2<=65) candidates.push({name:`Vittoria ${p.an}`,prob:p.p2,quotaEst:(100/p.p2).toFixed(2),type:'vittoria_a',priority:1});
+  if(p.pO25>=42&&p.pO25<=65) candidates.push({name:'Over 2.5',prob:p.pO25,quotaEst:(100/p.pO25).toFixed(2),type:'over25',priority:1});
+  if(p.pU25>=42&&p.pU25<=65) candidates.push({name:'Under 2.5',prob:p.pU25,quotaEst:(100/p.pU25).toFixed(2),type:'under25',priority:1});
+  if(p.pBTTS>=42&&p.pBTTS<=65) candidates.push({name:'BTTS (GG)',prob:p.pBTTS,quotaEst:(100/p.pBTTS).toFixed(2),type:'btts',priority:2});
+  if(p.pNG>=42&&p.pNG<=65) candidates.push({name:'No BTTS',prob:p.pNG,quotaEst:(100/p.pNG).toFixed(2),type:'nobtts',priority:2});
+  if(p.pO35>=30&&p.pO35<=50) candidates.push({name:'Over 3.5',prob:p.pO35,quotaEst:(100/p.pO35).toFixed(2),type:'over35',priority:2});
+  if(p.mg2t_12>=42&&p.mg2t_12<=62) candidates.push({name:'Multigol 2T: 1-2 gol',prob:p.mg2t_12,quotaEst:((100/p.mg2t_12)*1.05).toFixed(2),type:'mg2t12',priority:3});
+  if(p.mg1t_01>=42&&p.mg1t_01<=65) candidates.push({name:'Multigol 1T: 0-1 gol',prob:p.mg1t_01,quotaEst:((100/p.mg1t_01)*1.05).toFixed(2),type:'mg1t01',priority:3});
 
   if(!candidates.length){
     pm.textContent='Nessun mercato bilanciato disponibile';
     pw.innerHTML='<span style="color:var(--muted)">Tutti i mercati hanno probabilità troppo alte o troppo basse. Verifica i dati inseriti.</span>';
-    pq.textContent='—';pa.textContent='—';return;
+    pq.textContent='—';pa.innerHTML='—';return;
   }
 
-  candidates.sort((a,b)=>Math.abs(a.prob-52)-Math.abs(b.prob-52));
+  // Ordina: prima per priorità, poi per vicinanza al 52%
+  candidates.sort((a,b)=>{
+    if(a.priority!==b.priority)return a.priority-b.priority;
+    return Math.abs(a.prob-52)-Math.abs(b.prob-52);
+  });
   const best=candidates[0];
-  const alt=candidates[1];
+  // Alternativa: miglior candidato di priorità uguale o superiore, diverso dal best
+  const altCandidates=candidates.filter(c=>c!==best&&c.priority<=best.priority);
+  const alt=altCandidates.length?altCandidates[0]:candidates[1];
 
   const whyText=buildWhy(best.name,best.prob,best.type,extra);
   pm.textContent=`${best.name} — ${best.prob}%`;
-  // Render motivazioni come lista con ritorno a capo
   pw.innerHTML=whyText.split('\n').map(r=>`<div style="margin-bottom:5px">${r}</div>`).join('');
   pq.textContent=`~${best.quotaEst}`;
-  pa.textContent=alt?`${alt.name} (${alt.prob}%, ~${alt.quotaEst})`:'—';
+
+  // Alternativa con badge priorità
+  const priorityLabel=alt?{1:'⭐ Principale',2:'🔶 Secondario',3:'🔷 Nicchia'}[alt.priority]:'';
+  pa.innerHTML=alt
+    ?`<span style="font-size:10px;background:rgba(255,255,255,0.07);padding:2px 6px;border-radius:4px;margin-right:4px">${priorityLabel}</span>${alt.name} <span style="font-family:'DM Mono',monospace">(${alt.prob}%, ~${alt.quotaEst})</span>`
+    :'—';
 }
 
 function calcX12Value(id){
@@ -994,10 +1110,16 @@ function openStoricoModal(id){
   const prono=pm?pm.textContent:'—';
   const pq=document.getElementById('prono_quota_'+id);
   const quotaStimata=pq?pq.textContent.replace('~',''):'—';
+  const paEl=document.getElementById('prono_alt_'+id);
+  // Estrai testo alternativa (rimuovi badge HTML)
+  const altText=paEl?paEl.innerText.replace(/^[⭐🔶🔷]\s*(Principale|Secondario|Nicchia)\s*/,'').trim():'—';
 
   document.getElementById('modal-partita').textContent=`${hn} vs ${an} (${comp})`;
   document.getElementById('modal-prono').textContent=prono;
   document.getElementById('modal-quota-stimata').textContent=quotaStimata;
+  document.getElementById('modal-alt-display').textContent=altText!=='—'?altText:'Nessuna';
+  document.getElementById('modal-usa-alt').checked=false;
+  document.getElementById('modal-alt-data').dataset.altText=altText;
   document.getElementById('modal-quota').value='';
   document.getElementById('modal-stake').value='1';
   document.getElementById('modal-data').value=new Date().toISOString().slice(0,10);
@@ -1015,10 +1137,12 @@ function salvaInStorico(){
   const d=matchData[id]||{};
   const hn=document.getElementById('th_'+id)?.value||d.team_h||'Casa';
   const an=document.getElementById('ta_'+id)?.value||d.team_a||'Ospite';
-  const comp=document.getElementById('modal-partita').textContent.split('(')[1]?.replace(')','').trim()||d.comp||'—';
   const quota=parseFloat(document.getElementById('modal-quota').value);
   const stake=parseFloat(document.getElementById('modal-stake').value)||1;
-  const prono=document.getElementById('modal-prono').textContent;
+  const usaAlt=document.getElementById('modal-usa-alt').checked;
+  const altText=document.getElementById('modal-alt-data').dataset.altText||'—';
+  const pronoBase=document.getElementById('modal-prono').textContent;
+  const prono=usaAlt&&altText!=='—'&&altText!=='Nessuna'?altText:pronoBase;
   const data=document.getElementById('modal-data').value;
   const note=document.getElementById('modal-note').value;
 
@@ -1030,6 +1154,7 @@ function salvaInStorico(){
     partita:`${hn} vs ${an}`,
     comp:d.comp||'—',
     prono,
+    pronoAlt:usaAlt?pronoBase:altText,
     quota,
     stake,
     note,
@@ -1039,7 +1164,6 @@ function salvaInStorico(){
   saveStorico();
   closeModal();
   renderStorico();
-  // Vai alla tab storico
   showPage('storico');
 }
 
@@ -1085,6 +1209,7 @@ function renderStorico(){
           <div style="font-size:13px;font-weight:600;color:var(--text)">${s.partita}</div>
           <div style="font-size:11px;color:var(--muted);margin-top:2px">${s.comp} · ${s.data}</div>
           <div style="font-size:12px;color:var(--accent2);margin-top:5px;font-weight:500">${s.prono}</div>
+          ${s.pronoAlt&&s.pronoAlt!=='—'?`<div style="font-size:11px;color:var(--green);margin-top:2px">🔀 Alt: ${s.pronoAlt}</div>`:''}
           ${s.note?`<div style="font-size:11px;color:var(--muted);margin-top:3px;font-style:italic">${s.note}</div>`:''}
         </div>
         <div style="text-align:right;flex-shrink:0">
@@ -1134,10 +1259,31 @@ function updateStoricoDashboard(){
       <button onclick="closeModal()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer">✕</button>
     </div>
     <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px" id="modal-partita">—</div>
-    <div style="font-size:12px;color:var(--accent2);margin-bottom:16px;padding:8px;background:rgba(108,99,255,0.1);border-radius:8px">
-      🎯 Pronostico: <span id="modal-prono" style="font-weight:600">—</span>
-      <span style="color:var(--muted);margin-left:8px">· Quota attesa: <span id="modal-quota-stimata" style="color:var(--amber)">—</span></span>
+    <div id="modal-alt-data" data-alt-text="—"></div>
+
+    <!-- Pronostico principale -->
+    <div style="background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.25);border-radius:10px;padding:10px 12px;margin-bottom:10px">
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px">🎯 Pronostico consigliato</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
+        <span id="modal-prono" style="font-size:13px;font-weight:700;color:var(--accent2)">—</span>
+        <span style="font-size:11px;color:var(--amber)">Quota attesa: <span id="modal-quota-stimata" style="font-family:'DM Mono',monospace;font-weight:600">—</span></span>
+      </div>
     </div>
+
+    <!-- Alternativa con toggle -->
+    <div style="background:rgba(52,211,153,0.07);border:1px solid rgba(52,211,153,0.2);border-radius:10px;padding:10px 12px;margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <div>
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px">🔀 Alternativa suggerita</div>
+          <div id="modal-alt-display" style="font-size:12px;font-weight:600;color:var(--green)">—</div>
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;flex-shrink:0">
+          <input type="checkbox" id="modal-usa-alt" style="width:16px;height:16px;accent-color:var(--green);cursor:pointer">
+          <span style="font-size:11px;color:var(--muted);white-space:nowrap">Usa questa</span>
+        </label>
+      </div>
+    </div>
+
     <div style="display:flex;flex-direction:column;gap:12px">
       <div>
         <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em">Quota bookmaker</label>
