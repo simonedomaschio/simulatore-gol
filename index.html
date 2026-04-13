@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulatore Gol Partita</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;500;600&display=swap');
+  :root{
+    --bg:#0f0f13;--bg2:#16161c;--bg3:#1e1e28;
+    --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.14);
+    --text:#e8e6f0;--muted:#7a7890;
+    --accent:#6c63ff;--accent2:#a78bfa;
+    --green:#34d399;--amber:#fbbf24;--red:#f87171;
+    --green-bg:rgba(52,211,153,0.1);--amber-bg:rgba(251,191,36,0.1);--red-bg:rgba(248,113,113,0.1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;min-height:100vh;}
+  .header{background:var(--bg2);border-bottom:1px solid var(--border);padding:18px 32px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:100;}
+  .logo-dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent);}
+  .header-title{font-size:14px;font-weight:500;letter-spacing:.04em;}
+  .header-sub{font-size:11px;color:var(--muted);margin-left:auto;font-family:'DM Mono',monospace;}
+  .container{max-width:980px;margin:0 auto;padding:32px 24px 60px;}
+  .section-label{font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:24px 0 10px;}
+  .ai-badge{font-size:9px;background:rgba(108,99,255,0.2);color:var(--accent2);padding:2px 7px;border-radius:10px;letter-spacing:.05em;font-weight:500;}
+  .ai-badge-green{font-size:9px;background:rgba(52,211,153,0.15);color:var(--green);padding:2px 7px;border-radius:10px;letter-spacing:.05em;font-weight:500;}
+
+  .step-card{border-radius:16px;padding:22px;margin-bottom:12px;}
+  .step-card.step1{background:linear-gradient(135deg,rgba(108,99,255,0.1),rgba(167,139,250,0.05));border:1px solid rgba(108,99,255,0.25);}
+  .step-card.step2{background:linear-gradient(135deg,rgba(52,211,153,0.08),rgba(52,211,153,0.03));border:1px solid rgba(52,211,153,0.2);}
+  .step-hd{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .step-num{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+  .step-num.s1{background:var(--accent);color:#fff;}
+  .step-num.s2{background:var(--green);color:#0f0f13;}
+  .step-title{font-size:13px;font-weight:600;}
+  .step1 .step-title{color:var(--accent2);}
+  .step2 .step-title{color:var(--green);}
+  .step-sub{font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.6;}
+
+  .matches-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+  .match-row{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:10px 12px;}
+  .f label{display:block;font-size:10px;color:var(--muted);margin-bottom:4px;}
+  .f input,.f select{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-size:12px;color:var(--text);font-family:'Sora',sans-serif;outline:none;transition:border-color .2s;}
+  .f input:focus,.f select:focus{border-color:var(--accent);}
+  .f select option{background:var(--bg3);}
+  .btn-del{background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.2);color:var(--red);border-radius:7px;width:28px;height:28px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .btn-del:hover{background:rgba(248,113,113,0.25);}
+  .btn-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .btn{border:none;border-radius:8px;padding:10px 18px;font-size:13px;font-weight:600;font-family:'Sora',sans-serif;cursor:pointer;transition:opacity .2s;display:flex;align-items:center;gap:7px;}
+  .btn-add{background:rgba(108,99,255,0.15);color:var(--accent2);border:1px solid rgba(108,99,255,0.3);}
+  .btn-add:hover{background:rgba(108,99,255,0.25);}
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-primary:hover{opacity:.87;}
+  .msg-preview{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);line-height:1.7;max-height:160px;overflow-y:auto;margin-bottom:12px;white-space:pre-wrap;word-break:break-word;}
+  .copied-badge{font-size:11px;color:var(--green);display:none;align-items:center;gap:5px;}
+  .copied-badge.show{display:flex;}
+  .paste-area{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:12px;font-size:12px;font-family:'DM Mono',monospace;color:var(--text);line-height:1.6;resize:vertical;min-height:80px;outline:none;transition:border-color .2s;}
+  .paste-area:focus{border-color:var(--green);}
+  .paste-area::placeholder{color:#3a384a;}
+  .ai-note{font-size:11px;color:var(--muted);padding:10px 12px;background:rgba(52,211,153,0.06);border-radius:8px;border-left:2px solid rgba(52,211,153,0.3);line-height:1.6;}
+
+  .tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
+  .tab{padding:7px 14px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:var(--bg3);color:var(--muted);transition:all .2s;}
+  .tab.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .tab-content{display:none;}
+  .tab-content.active{display:block;}
+
+  /* 1X2 */
+  .x12-banner{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;}
+  .x12-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 12px;text-align:center;}
+  .x12-box.top1{border-color:rgba(108,99,255,0.5);background:rgba(108,99,255,0.1);}
+  .x12-box.topx{border-color:rgba(251,191,36,0.4);background:rgba(251,191,36,0.06);}
+  .x12-box.top2{border-color:rgba(52,211,153,0.4);background:rgba(52,211,153,0.06);}
+  .x12-label{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+  .x12-pct{font-family:'DM Mono',monospace;font-size:28px;font-weight:600;margin-bottom:4px;}
+  .x12-box.top1 .x12-pct{color:var(--accent2);}
+  .x12-box.topx .x12-pct{color:var(--amber);}
+  .x12-box.top2 .x12-pct{color:var(--green);}
+  .x12-esito{font-size:11px;color:var(--muted);}
+  .x12-value-row{display:flex;align-items:center;gap:6px;margin-top:6px;justify-content:center;}
+  .x12-value-row label{font-size:10px;color:var(--muted);}
+  .x12-value-row input{width:68px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:4px 6px;font-size:12px;color:var(--text);font-family:'DM Mono',monospace;outline:none;text-align:center;}
+  .x12-value-row input:focus{border-color:var(--accent);}
+  .x12-result{font-size:10px;margin-top:4px;font-weight:500;}
+  .x12-val-ok{color:var(--green);}
+  .x12-val-no{color:var(--red);}
+  .x12-val-neu{color:var(--amber);}
+
+  /* MULTIGOL */
+  .mg-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+  .mg-block{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;}
+  .mg-block-title{font-size:12px;font-weight:600;color:var(--accent2);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+  .mg-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);}
+  .mg-lbl{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;font-weight:500;}
+  .mg-right{display:flex;align-items:center;gap:8px;}
+  .mg-pct{font-family:'DM Mono',monospace;font-size:14px;font-weight:600;min-width:42px;text-align:right;}
+  .mg-bar-wrap{width:60px;background:var(--bg3);border-radius:3px;height:4px;overflow:hidden;}
+  .mg-bar{height:4px;border-radius:3px;background:var(--accent);transition:width .4s;}
+  .mg-value-row{display:flex;align-items:center;gap:5px;padding:3px 0;}
+  .mg-value-row label{font-size:10px;color:var(--muted);}
+  .mg-value-row input{width:62px;background:var(--bg3);border:1px solid var(--border2);border-radius:5px;padding:3px 6px;font-size:11px;color:var(--text);font-family:'DM Mono',monospace;outline:none;text-align:center;}
+  .mg-value-row input:focus{border-color:var(--accent);}
+  .mg-vres{font-size:10px;font-weight:500;}
+
+  /* STATS */
+  .card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:22px;margin-bottom:16px;}
+  .field label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px;}
+  .field{margin-bottom:10px;}
+  .field input[type=text],.field select{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);font-family:'Sora',sans-serif;outline:none;}
+  .field select option{background:var(--bg3);}
+  .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  .team-hd{font-size:13px;font-weight:600;color:var(--accent2);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+  .stat-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.03);}
+  .stat-lbl{font-size:12px;color:var(--muted);flex:1;}
+  .stat-unit{font-size:11px;color:#4a4860;margin-left:4px;}
+  .num-input{width:80px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:6px 10px;font-size:14px;font-family:'DM Mono',monospace;font-weight:500;color:var(--text);text-align:center;outline:none;transition:border-color .2s,background .3s;}
+  .num-input:focus{border-color:var(--accent);}
+  .num-input.ai-filled{background:rgba(52,211,153,0.12);border-color:rgba(52,211,153,0.5);animation:pulse-in .5s ease;}
+  @keyframes pulse-in{0%{transform:scale(1.1)}100%{transform:scale(1)}}
+  .h2h-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:10px;}
+  .h2h-item label{font-size:11px;color:var(--muted);display:block;margin-bottom:6px;}
+  .h2h-item .num-input{width:100%;}
+
+  .mkt-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
+  .mkt{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 12px;cursor:pointer;transition:border-color .2s;}
+  .mkt:hover{border-color:var(--accent);}
+  .mkt.selected{border-color:var(--accent);background:rgba(108,99,255,0.12);}
+  .mkt-name{font-size:10px;color:var(--muted);margin-bottom:5px;}
+  .mkt-pct{font-family:'DM Mono',monospace;font-size:20px;font-weight:500;color:var(--text);margin-bottom:5px;}
+  .mkt-sig{font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:20px;display:inline-block;}
+  .sig-alto  {background:rgba(52,211,153,0.18);color:#34d399;}
+  .sig-buono {background:rgba(110,231,183,0.15);color:#6ee7b7;}
+  .sig-medio {background:rgba(251,191,36,0.18); color:#fbbf24;}
+  .sig-eq    {background:rgba(249,115,22,0.18); color:#f97316;}
+  .sig-basso {background:rgba(248,113,113,0.18);color:#f87171;}
+  .sig-raro  {background:rgba(107,114,128,0.15);color:#9ca3af;}
+
+  .value-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:22px;margin-bottom:16px;}
+  .value-header{font-size:13px;font-weight:500;color:var(--text);margin-bottom:5px;}
+  .value-tip{font-size:11px;color:#4a4860;margin-bottom:16px;font-style:italic;}
+  .value-rows{display:flex;flex-direction:column;gap:8px;}
+  .vrow{background:var(--bg3);border-radius:10px;padding:12px 14px;border:1px solid var(--border);}
+  .vrow-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .vrow-name{font-size:12px;color:var(--accent2);font-weight:500;flex:1;min-width:110px;}
+  .vrow-prob{font-family:'DM Mono',monospace;font-size:12px;color:var(--muted);white-space:nowrap;}
+  .vrow-input-wrap{display:flex;align-items:center;gap:7px;}
+  .vrow-input-wrap label{font-size:11px;color:var(--muted);white-space:nowrap;}
+  .vrow-input-wrap input{width:76px;background:var(--bg2);border:1px solid var(--border2);border-radius:7px;padding:6px 8px;font-size:13px;color:var(--text);font-family:'DM Mono',monospace;outline:none;text-align:center;transition:border-color .2s;}
+  .vrow-input-wrap input:focus{border-color:var(--accent);}
+  .vres{margin-top:8px;display:none;align-items:center;gap:8px;flex-wrap:wrap;}
+  .vres.show{display:flex;}
+  .vbadge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;}
+  .vb-pos{background:var(--green-bg);color:var(--green);}
+  .vb-neg{background:var(--red-bg);color:var(--red);}
+  .vb-neu{background:var(--amber-bg);color:var(--amber);}
+  .vdetail{font-size:11px;color:var(--muted);}
+
+  .verdict-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:22px;}
+  .verdict-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
+  .verdict-title{font-size:14px;font-weight:500;color:var(--text);}
+  .verdict-score{font-family:'DM Mono',monospace;font-size:32px;font-weight:500;}
+  .bar-bg{background:var(--bg3);border-radius:4px;height:5px;margin-bottom:14px;overflow:hidden;}
+  .bar-fg{height:5px;border-radius:4px;transition:width .6s cubic-bezier(.4,0,.2,1),background .4s;}
+  .best-bet{border-left:2px solid var(--green);background:var(--green-bg);border-radius:0 10px 10px 0;padding:10px 14px;margin-bottom:8px;}
+  .best-lbl{font-size:9px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--green);margin-bottom:4px;}
+  .best-val{font-size:13px;color:var(--green);font-weight:500;}
+  .warn{border-left:2px solid var(--amber);background:var(--amber-bg);border-radius:0 10px 10px 0;padding:8px 14px;font-size:12px;color:var(--amber);margin-top:6px;}
+  .lega-pill{font-family:'DM Mono',monospace;font-size:10px;padding:3px 9px;border-radius:20px;background:rgba(108,99,255,0.15);color:var(--accent2);display:inline-block;margin-top:5px;}
+
+  @media(max-width:640px){
+    .match-row{grid-template-columns:1fr 1fr;gap:6px;}
+    .x12-banner,.mg-grid,.stats-grid{grid-template-columns:1fr;}
+    .mkt-grid{grid-template-columns:repeat(2,1fr);}
+    .h2h-grid{grid-template-columns:1fr;}
+    .container{padding:20px 16px 40px;}
+  }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo-dot"></div>
+  <span class="header-title">Simulatore Gol Partita</span>
+  <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
+    <button id="nav-sim" onclick="showPage('simulatore')" class="nav-active" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;font-family:'Sora',sans-serif;cursor:pointer;border:1px solid var(--border2);background:var(--accent);color:#fff;transition:all .2s">📊 Analisi</button>
+    <button id="nav-sto" onclick="showPage('storico')" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;font-family:'Sora',sans-serif;cursor:pointer;border:1px solid var(--border2);background:var(--bg3);color:var(--muted);transition:all .2s">📒 Registro</button>
+  </div>
+</div>
+<div id="page-simulatore">
+<div class="container">
+
+  <div class="section-label" style="margin-top:0">Ricerca AI — 2 passi</div>
+  <div class="step-card step1">
+    <div class="step-hd"><div class="step-num s1">1</div><div class="step-title">Inserisci le partite e copia il messaggio per Claude</div></div>
+    <p class="step-sub">Aggiungi le partite, copia → incolla nella chat → Claude risponde con statistiche, 1X2 e multigol a intervalli.</p>
+    <div class="matches-list" id="matches-list"></div>
+    <div class="btn-row" style="margin-bottom:14px">
+      <button class="btn btn-add" onclick="addRow()">＋ Aggiungi partita</button>
+    </div>
+    <div class="msg-preview" id="msg-preview">← Inserisci almeno una partita</div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="copyMessage()">📋 Copia tutto per Claude</button>
+      <div class="copied-badge" id="copied-badge">✓ Copiato!</div>
+    </div>
+  </div>
+
+  <div class="step-card step2">
+    <div class="step-hd"><div class="step-num s2">2</div><div class="step-title">Incolla qui la risposta di Claude</div></div>
+    <p class="step-sub">Su iPhone: copia la risposta → premi il pulsante verde qui sotto. Il pulsante legge gli appunti direttamente evitando il troncamento iOS.</p>
+    <button onclick="pasteFromClipboard()" style="width:100%;padding:14px;background:var(--green);color:#0f0f13;font-weight:700;font-size:14px;border:none;border-radius:10px;cursor:pointer;font-family:Sora,sans-serif;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px">📥 Incolla risposta di Claude (consigliato iOS)</button>
+    <textarea class="paste-area" id="paste-area" placeholder="Oppure incolla qui manualmente..." oninput="parseResponse()"></textarea>
+    <div id="parse-feedback" style="margin-top:8px;font-size:12px;"></div>
+  </div>
+
+  <div class="section-label">Analisi partite <span class="ai-badge-green" style="vertical-align:middle;margin-left:6px">AI · modifica se necessario</span></div>
+  <div class="tabs" id="tabs-bar"></div>
+  <div id="tabs-content"></div>
+
+  <div style="text-align:center;font-size:11px;color:#4a4860;margin-top:32px;line-height:1.8">
+    Modello Poisson + statistiche reali · Il gioco d'azzardo può causare dipendenza — solo per maggiorenni
+  </div>
+</div>
+
+<script>
+const COMPS=['Champions League','Europa League','Conference League','Bundesliga','Eredivisie','Premier League','Ligue 1','Serie A','La Liga','Championship','Serie B','Süper Lig','Eerste Divisie','Altra lega'];
+const COMP_MULT={'Champions League':1.08,'Europa League':1.06,'Conference League':1.05,'Bundesliga':1.15,'Eredivisie':1.12,'Premier League':1.05,'Ligue 1':1.06,'Serie A':1.02,'La Liga':1.01,'Championship':1.04,'Serie B':1.02,'Süper Lig':1.04,'Eerste Divisie':1.12,'Altra lega':1.00};
+
+// Multigol TOTALE partita (gol complessivi delle due squadre)
+const MG_TOTALE = [
+  {key:'mgt_01',  label:'0-1 gol totali'},
+  {key:'mgt_12',  label:'1-2 gol totali'},
+  {key:'mgt_13',  label:'1-3 gol totali'},
+  {key:'mgt_23',  label:'2-3 gol totali'},
+  {key:'mgt_24',  label:'2-4 gol totali'},
+  {key:'mgt_25',  label:'2-5 gol totali'},
+  {key:'mgt_34',  label:'3-4 gol totali'},
+  {key:'mgt_3p',  label:'3+ gol totali'},
+  {key:'mgt_4p',  label:'4+ gol totali'},
+];
+// Multigol 1° tempo (gol totali nel primo tempo)
+const MG_1T = [
+  {key:'mg1t_01', label:'0-1 gol'},
+  {key:'mg1t_12', label:'1-2 gol'},
+  {key:'mg1t_2p', label:'2+ gol'},
+];
+// Multigol 2° tempo (gol totali nel secondo tempo)
+const MG_2T = [
+  {key:'mg2t_01', label:'0-1 gol'},
+  {key:'mg2t_12', label:'1-2 gol'},
+  {key:'mg2t_2p', label:'2+ gol'},
+];
+
+let rows=[],matchData={},marketDataMap={},rowCounter=0,activeTab=null;
+function uid(){return++rowCounter;}
+
+function addRow(){
+  const id=uid();
+  rows.push({id,home:'',away:'',comp:'Serie A'});
+  matchData[id]={};marketDataMap[id]=[];
+  renderRows();renderTabs();updatePreview();
+}
+function removeRow(id){
+  rows=rows.filter(r=>r.id!==id);
+  delete matchData[id];delete marketDataMap[id];
+  if(activeTab===id)activeTab=rows.length?rows[0].id:null;
+  renderRows();renderTabs();updatePreview();
+}
+function renderRows(){
+  document.getElementById('matches-list').innerHTML=rows.map(r=>`
+    <div class="match-row">
+      <div class="f"><label>Squadra casa</label><input type="text" value="${r.home}" placeholder="es. Roma" oninput="updateRow(${r.id},'home',this.value)"></div>
+      <div class="f"><label>Squadra ospite</label><input type="text" value="${r.away}" placeholder="es. Pisa" oninput="updateRow(${r.id},'away',this.value)"></div>
+      <div class="f"><label>Competizione</label>
+        <select onchange="updateRow(${r.id},'comp',this.value)">
+          ${COMPS.map(c=>`<option value="${c}" ${c===r.comp?'selected':''}>${c}</option>`).join('')}
+        </select>
+      </div>
+      <button class="btn-del" onclick="removeRow(${r.id})">✕</button>
+    </div>`).join('');
+}
+function updateRow(id,f,v){const r=rows.find(r=>r.id===id);if(r){r[f]=v;updatePreview();renderTabs();}}
+
+function buildMessage(){
+  const valid=rows.filter(r=>r.home.trim()&&r.away.trim());
+  if(!valid.length)return'';
+  const mgtKeys=MG_TOTALE.map(m=>`"${m.key}":X`).join(',');
+  const mg1tKeys=MG_1T.map(m=>`"${m.key}":X`).join(',');
+  const mg2tKeys=MG_2T.map(m=>`"${m.key}":X`).join(',');
+  const mgtDesc=MG_TOTALE.map(m=>`- ${m.key} = % ${m.label} nella partita (gol di entrambe le squadre sommati)`).join('\n');
+  const mg1tDesc=MG_1T.map(m=>`- ${m.key} = % gol totali nel 1° tempo: ${m.label}`).join('\n');
+  const mg2tDesc=MG_2T.map(m=>`- ${m.key} = % gol totali nel 2° tempo: ${m.label}`).join('\n');
+  let msg=`STATS MULTIPLO — ${valid.length} partite\n\nCerca le statistiche reali 2025-26 per tutte le seguenti partite.\n\nRispondimi SOLO con un array JSON valido, nessun testo prima o dopo:\n[\n`;
+  msg+=valid.map((r,i)=>`  {
+    "id":${i+1},
+    "team_h":"${r.home}","team_a":"${r.away}","comp":"${r.comp}",
+    "p1":X,"px":X,"p2":X,
+    "gs_h":X,"gc_h":X,"o25_h":X,"btts_h":X,"cs_h":X,
+    "gs_a":X,"gc_a":X,"o25_a":X,"btts_a":X,"cs_a":X,
+    "h2h_avg":X,"h2h_o25":X,"h2h_btts":X,
+    ${mgtKeys},
+    ${mg1tKeys},
+    ${mg2tKeys},
+    "note":"..."
+  }`).join(',\n');
+  msg+=`\n]\n\nDove per ogni partita:\n- p1/px/p2 = probabilità % vittoria casa/pareggio/ospite (somma ~100)\n- gs_h/gc_h = gol segnati/subiti IN CASA; o25_h/btts_h/cs_h = % Over2.5/BTTS/CS IN CASA\n- gs_a/gc_a = gol segnati/subiti IN TRASFERTA; o25_a/btts_a/cs_a = % Over2.5/BTTS/CS IN TRASFERTA\n- h2h_avg/h2h_o25/h2h_btts = media gol/Over2.5%/BTTS% precedenti\nMultigol totale partita (gol complessivi entrambe le squadre):\n${mgtDesc}\n  (ogni range X-Y = probabilità che la partita finisca con almeno X e al massimo Y gol in totale; le % non devono sommare a 100)\nMultigol per tempo:\n${mg1tDesc}\n${mg2tDesc}\n  (mg1t/mg2t = gol totali segnati in quel tempo, somma ~100 per gruppo)\n- note = breve nota in italiano`;
+  return msg;
+}
+function updatePreview(){
+  document.getElementById('msg-preview').textContent=buildMessage()||'← Inserisci almeno una partita';
+}
+function copyMessage(){
+  const msg=buildMessage();
+  if(!msg){alert('Inserisci almeno una partita.');return;}
+  navigator.clipboard.writeText(msg).catch(()=>{const ta=document.createElement('textarea');ta.value=msg;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);});
+  const b=document.getElementById('copied-badge');b.className='copied-badge show';setTimeout(()=>b.className='copied-badge',3000);
+}
+async function pasteFromClipboard(){
+  try{
+    const text=await navigator.clipboard.readText();
+    const ta=document.getElementById('paste-area');
+    ta.value=text;
+    parseResponse();
+  }catch(e){
+    document.getElementById('parse-feedback').innerHTML='<span style="color:var(--amber)">⚠️ Permesso clipboard negato — usa il copia-incolla manuale nella casella sotto, oppure consenti l\'accesso agli appunti nelle impostazioni Safari.</span>';
+  }
+}
+
+function parseResponse(){
+  const raw=document.getElementById('paste-area').value;
+  const fb=document.getElementById('parse-feedback');
+  if(!raw.trim()){fb.innerHTML='';return;}
+  const match=raw.match(/\[[\s\S]*\]/);
+  if(!match){fb.innerHTML='<span style="color:var(--amber)">⏳ In attesa di array JSON valido...</span>';return;}
+  try{
+    const arr=JSON.parse(match[0]);
+    // Auto-crea righe se mancanti
+    const valid=rows.filter(r=>r.home.trim()&&r.away.trim());
+    if(valid.length===0){
+      arr.forEach(d=>{
+        const id=uid();
+        rows.push({id,home:d.team_h||'Casa',away:d.team_a||'Ospite',comp:d.comp||'Serie A'});
+        matchData[id]={};marketDataMap[id]=[];
+      });
+      renderRows();updatePreview();
+    }
+    const valid2=rows.filter(r=>r.home.trim()&&r.away.trim());
+    let filled=0;
+    arr.forEach((d,i)=>{const row=valid2[i];if(!row)return;matchData[row.id]=d;filled++;});
+    fb.innerHTML=`<span style="color:var(--green)">✓ Dati caricati per ${filled} partite! Scorri in basso per vedere l'analisi.</span>`;
+    renderTabs();
+    if(filled>0&&rows.length>0)switchTab(rows.filter(r=>r.home.trim()&&r.away.trim())[0].id);
+  }catch(e){
+    fb.innerHTML='<span style="color:var(--red)">⚠️ JSON non valido — assicurati di copiare TUTTA la risposta di Claude, incluse le parentesi [ ].</span>';
+  }
+}
+
+function renderTabs(){
+  const bar=document.getElementById('tabs-bar');
+  const content=document.getElementById('tabs-content');
+  const valid=rows.filter(r=>r.home.trim()&&r.away.trim());
+  if(!valid.length){bar.innerHTML='<span style="font-size:12px;color:var(--muted)">Aggiungi partite per vedere le tab</span>';content.innerHTML='';return;}
+  bar.innerHTML=valid.map(r=>`<div class="tab ${activeTab===r.id?'active':''}" onclick="switchTab(${r.id})">${r.home} vs ${r.away}</div>`).join('');
+  content.innerHTML=valid.map(r=>`<div class="tab-content ${activeTab===r.id?'active':''}" id="tc_${r.id}">${renderTabContent(r)}</div>`).join('');
+  valid.forEach(r=>{if(Object.keys(matchData[r.id]||{}).length>0)calcTab(r.id);});
+}
+function switchTab(id){
+  activeTab=id;
+  document.querySelectorAll('.tab').forEach((t,i)=>{const r=rows.filter(r=>r.home.trim()&&r.away.trim())[i];if(r)t.className='tab'+(r.id===id?' active':'');});
+  document.querySelectorAll('.tab-content').forEach(tc=>{tc.className='tab-content'+(tc.id===`tc_${id}`?' active':'');});
+}
+
+function mgHalfHtml(id, half, d){
+  const ranges = half==='1t' ? MG_1T : MG_2T;
+  return ranges.map((m,i)=>{
+    const p=d[m.key];
+    const pct=p!==undefined?p+'%':'—';
+    const barW=p!==undefined?Math.min(p,100):0;
+    const col=p>=50?'var(--green)':p>=30?'var(--amber)':'var(--accent2)';
+    return`<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04)">
+      <div class="mg-row">
+        <span class="mg-lbl">${m.label}</span>
+        <div class="mg-right">
+          <div class="mg-bar-wrap"><div class="mg-bar" id="mghbar_${id}_${half}_${i}" style="width:${barW}%;background:${col}"></div></div>
+          <span class="mg-pct" id="mghv_${id}_${half}_${i}" style="color:${p!==undefined?col:'var(--muted)'}">${pct}</span>
+        </div>
+      </div>
+      <div class="mg-value-row">
+        <label>Quota:</label>
+        <input type="number" step="0.01" min="1.01" placeholder="—" id="mghq_${id}_${half}_${i}" oninput="calcMgHalfValue(${id},'${half}',${i})">
+        <span class="mg-vres" id="mghr_${id}_${half}_${i}"></span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function calcMgHalfValue(id,half,i){
+  const ranges=half==='1t'?MG_1T:MG_2T;
+  const m=ranges[i];if(!m)return;
+  const d=matchData[id]||{};const prob=d[m.key];
+  const res=document.getElementById(`mghr_${id}_${half}_${i}`);
+  const inp=document.getElementById(`mghq_${id}_${half}_${i}`);
+  if(!res||!inp||prob===undefined)return;
+  const quota=parseFloat(inp.value);
+  if(!quota||quota<1.01){res.textContent='';return;}
+  const impl=Math.round((1/quota)*1000)/10;
+  const diff=Math.round((prob-impl)*10)/10;
+  if(diff>=8){res.textContent=`✓ +${diff}%`;res.style.color='var(--green)';}
+  else if(diff>=2){res.textContent=`≈ +${diff}%`;res.style.color='var(--amber)';}
+  else if(diff>=0){res.textContent='~';res.style.color='var(--amber)';}
+  else{res.textContent=`✗ ${diff}%`;res.style.color='var(--red)';}
+}
+
+function renderTabContent(row){
+  const d=matchData[row.id]||{};const id=row.id;
+  const hn=d.team_h||row.home||'Casa';
+  const an=d.team_a||row.away||'Ospite';
+
+  // Multigol totale partita
+  const mgTotaleHtml=(id,d)=>MG_TOTALE.map((m,i)=>{
+    const p=d[m.key];
+    const pct=p!==undefined?p+'%':'—';
+    const barW=p!==undefined?Math.min(p,100):0;
+    const [sl,sc]=p!==undefined?sig(p):['—','sig-raro'];
+    const col=p>=60?'var(--green)':p>=42?'var(--amber)':'var(--accent2)';
+    return`<div style="padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04)">
+      <div class="mg-row">
+        <span class="mg-lbl" style="font-family:'DM Mono',monospace;font-weight:600">${m.label}</span>
+        <div class="mg-right">
+          <span class="mkt-sig ${sc}" style="font-size:8px;margin-right:4px">${sl}</span>
+          <div class="mg-bar-wrap"><div class="mg-bar" id="mgtbar_${id}_${i}" style="width:${barW}%;background:${col}"></div></div>
+          <span class="mg-pct" id="mgtv_${id}_${i}" style="color:${p!==undefined?col:'var(--muted)'}">${pct}</span>
+        </div>
+      </div>
+      <div class="mg-value-row">
+        <label>Quota:</label>
+        <input type="number" step="0.01" min="1.01" placeholder="—" id="mgtq_${id}_${i}" oninput="calcMgTotaleValue(${id},${i})">
+        <span class="mg-vres" id="mgtr_${id}_${i}"></span>
+      </div>
+    </div>`;
+  }).join('');
+
+  return`
+  <!-- 1X2 -->
+  <div class="x12-banner">
+    <div class="x12-box top1">
+      <div class="x12-label">1 — Vittoria casa</div>
+      <div class="x12-pct" id="x12_p1_${id}">${d.p1??'—'}%</div>
+      <div class="x12-esito" id="x12_h_${id}">${hn}</div>
+      <div class="x12-value-row"><label>Quota:</label><input type="number" step="0.01" min="1.01" placeholder="es. 2.10" id="q1_${id}" oninput="calcX12Value(${id})"></div>
+      <div class="x12-result" id="r1_${id}"></div>
+    </div>
+    <div class="x12-box topx">
+      <div class="x12-label">X — Pareggio</div>
+      <div class="x12-pct" id="x12_px_${id}">${d.px??'—'}%</div>
+      <div class="x12-esito">Pareggio</div>
+      <div class="x12-value-row"><label>Quota:</label><input type="number" step="0.01" min="1.01" placeholder="es. 3.40" id="qx_${id}" oninput="calcX12Value(${id})"></div>
+      <div class="x12-result" id="rx_${id}"></div>
+    </div>
+    <div class="x12-box top2">
+      <div class="x12-label">2 — Vittoria ospite</div>
+      <div class="x12-pct" id="x12_p2_${id}">${d.p2??'—'}%</div>
+      <div class="x12-esito" id="x12_a_${id}">${an}</div>
+      <div class="x12-value-row"><label>Quota:</label><input type="number" step="0.01" min="1.01" placeholder="es. 3.80" id="q2_${id}" oninput="calcX12Value(${id})"></div>
+      <div class="x12-result" id="r2_${id}"></div>
+    </div>
+  </div>
+
+  <!-- MULTIGOL TOTALE + PER TEMPO -->
+  <div class="section-label">Multigol — gol totali partita e per tempo</div>
+  <div class="mg-grid">
+    <div class="mg-block">
+      <div class="mg-block-title" style="color:var(--accent2)">⚽ Totale partita</div>
+      ${mgTotaleHtml(id,d)}
+    </div>
+    <div class="mg-block" style="display:flex;flex-direction:column;gap:0">
+      <div>
+        <div class="mg-block-title" style="color:var(--amber)">🕐 Primo Tempo</div>
+        ${mgHalfHtml(id,'1t',d)}
+      </div>
+      <div style="margin-top:14px">
+        <div class="mg-block-title" style="color:var(--green)">🕑 Secondo Tempo</div>
+        ${mgHalfHtml(id,'2t',d)}
+      </div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="card">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+      <div class="field"><label>Squadra casa</label><input type="text" id="th_${id}" value="${hn}" oninput="updateLabel(${id});calcTab(${id})"></div>
+      <div class="field"><label>Squadra ospite</label><input type="text" id="ta_${id}" value="${an}" oninput="updateLabel(${id});calcTab(${id})"></div>
+      <div class="field"><label>Competizione</label>
+        <select id="comp_${id}" onchange="calcTab(${id})">
+          ${COMPS.map(c=>`<option value="${COMP_MULT[c]}" ${c===(d.comp||row.comp)?'selected':''}>${c}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="stats-grid">
+      <div>
+        <div class="team-hd" id="lh_${id}">${hn}</div>
+        <div class="stat-row"><span class="stat-lbl">Gol segnati/p (casa)</span><input class="num-input ${d.gs_h!==undefined?'ai-filled':''}" type="number" id="gs_h_${id}" value="${d.gs_h??''}" step="0.1" placeholder="—" oninput="calcTab(${id})"></div>
+        <div class="stat-row"><span class="stat-lbl">Gol subiti/p (casa)</span><input class="num-input ${d.gc_h!==undefined?'ai-filled':''}" type="number" id="gc_h_${id}" value="${d.gc_h??''}" step="0.1" placeholder="—" oninput="calcTab(${id})"></div>
+        <div class="stat-row"><span class="stat-lbl">Over 2.5 % <span class="stat-unit">(casa)</span></span><input class="num-input ${d.o25_h!==undefined?'ai-filled':''}" type="number" id="o25_h_${id}" value="${d.o25_h??''}" step="1" placeholder="—" oninput="calcTab(${id})"></div>
+        <div class="stat-row"><span class="stat-lbl">BTTS % <span class="stat-unit">(casa)</span></span><input class="num-input ${d.btts_h!==undefined?'ai-filled':''}" type="number" id="btts_h_${id}" value="${d.btts_h??''}" step="1" placeholder="—" oninput="calcTab(${id})"></div>
+        <div class="stat-row"><span class="stat-lbl">Clean sheet % <span class="stat-unit">(casa)</span></span><input class="num-input ${d.cs_h!==undefined?'ai-filled':''}" type="number" id="cs_h_${id}" value="${d.cs_h??''}" step="1" placeholder="—" oninput="calcTab(${id})"></div>
+      </div>
+      <div>
+        <div class="team-hd" id="la_${id}">${an}</div>
+        <div class="stat-row"><span class="stat-lbl">Gol segnati/p (trasf.)</span><input class="num-input ${d.gs_a!==undefined?'ai-filled':''}" type="number" id="gs_a_${id}" value="${d.gs_a??''}" step="0.1" placeholder="—" oninput="calcTab(${id})"></div>
+        <div class="stat-row"><span class="stat-lbl">Gol subiti/p (trasf.)</span><input class="num-input ${d.gc_a!==undefined?'ai-filled':''}" type="number" id="gc_a_${id}" value="${d.gc_a??''}" step="0.1" placeholder="—" oninput="calcTab(${id})"></div>
+        <div class="stat-row"><span class="stat-lbl">Over 2.5 % <span class="stat-unit">(trasf.)</span></span><input class="num-input ${d.o25_a!==undefined?'ai-filled':''}" type="number" id="o25_a_${id}" value="${d.o25_a??''}" step="1" placeholder="—" oninput="calcTab(${id})"></div>
+        <div class="stat-row"><span class="stat-lbl">BTTS % <span class="stat-unit">(trasf.)</span></span><input class="num-input ${d.btts_a!==undefined?'ai-filled':''}" type="number" id="btts_a_${id}" value="${d.btts_a??''}" step="1" placeholder="—" oninput="calcTab(${id})"></div>
+        <div class="stat-row"><span class="stat-lbl">Clean sheet % <span class="stat-unit">(trasf.)</span></span><input class="num-input ${d.cs_a!==undefined?'ai-filled':''}" type="number" id="cs_a_${id}" value="${d.cs_a??''}" step="1" placeholder="—" oninput="calcTab(${id})"></div>
+      </div>
+    </div>
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:500">H2H</div>
+      <div class="h2h-grid">
+        <div class="h2h-item"><label>Media gol H2H</label><input class="num-input ${d.h2h_avg!==undefined?'ai-filled':''}" type="number" id="h2h_avg_${id}" value="${d.h2h_avg??''}" step="0.1" placeholder="—" oninput="calcTab(${id})"></div>
+        <div class="h2h-item"><label>Over 2.5 % H2H</label><input class="num-input ${d.h2h_o25!==undefined?'ai-filled':''}" type="number" id="h2h_o25_${id}" value="${d.h2h_o25??''}" step="1" placeholder="—" oninput="calcTab(${id})"></div>
+        <div class="h2h-item"><label>BTTS % H2H</label><input class="num-input ${d.h2h_btts!==undefined?'ai-filled':''}" type="number" id="h2h_btts_${id}" value="${d.h2h_btts??''}" step="1" placeholder="—" oninput="calcTab(${id})"></div>
+      </div>
+    </div>
+    ${d.note?`<div class="ai-note" style="margin-top:12px">📌 ${d.note}</div>`:''}
+  </div>
+
+  <div class="section-label">Mercati gol totali</div>
+  <div class="mkt-grid" id="mkt_${id}"></div>
+  <div class="value-card">
+    <div class="value-header">Calcolatore value — mercati gol totali</div>
+    <p class="value-tip">VALUE = prob. stimata &gt; prob. implicita quota. Margine minimo: +8%</p>
+    <div class="value-rows" id="vrows_${id}"></div>
+  </div>
+
+  <div class="verdict-card" style="margin-bottom:16px">
+    <div class="verdict-top">
+      <div><div class="verdict-title" id="vtitle_${id}">—</div><div class="lega-pill" id="vlega_${id}">—</div></div>
+      <div class="verdict-score" id="vscore_${id}" style="color:var(--muted)">—</div>
+    </div>
+    <div class="bar-bg"><div class="bar-fg" id="vbar_${id}" style="width:0%"></div></div>
+    <div id="vbest_${id}"></div>
+    <div id="vwarn_${id}"></div>
+  </div>
+
+  <!-- RISULTATO ESATTO -->
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:16px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+      <span style="font-size:16px">🔢</span>
+      <span style="font-size:13px;font-weight:600;color:var(--text)">Risultati esatti per tempo</span>
+      <span style="font-size:9px;background:rgba(52,211,153,0.15);color:var(--green);padding:2px 7px;border-radius:10px;font-weight:500;letter-spacing:.05em">POISSON</span>
+    </div>
+    <div id="res_esatti_${id}" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px"></div>
+    <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;font-weight:500">Inserisci quota per calcolare value</div>
+      <div id="res_value_rows_${id}" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+  </div>
+
+  <!-- PRONOSTICO CONSIGLIATO -->
+  <div style="background:linear-gradient(135deg,rgba(108,99,255,0.12),rgba(52,211,153,0.06));border:1px solid rgba(108,99,255,0.3);border-radius:16px;padding:20px;margin-bottom:24px" id="prono_card_${id}">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <span style="font-size:16px">🎯</span>
+      <span style="font-size:13px;font-weight:600;color:var(--accent2)">Pronostico consigliato</span>
+      <span style="font-size:9px;background:rgba(108,99,255,0.2);color:var(--accent2);padding:2px 7px;border-radius:10px;font-weight:500;letter-spacing:.05em">BILANCIATO</span>
+    </div>
+    <div id="prono_main_${id}" style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px">—</div>
+    <div id="prono_why_${id}" style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:10px">—</div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span style="font-size:11px;color:var(--muted)">Quota attesa:</span>
+      <span id="prono_quota_${id}" style="font-family:'DM Mono',monospace;font-size:13px;color:var(--amber);font-weight:600">—</span>
+      <span style="font-size:11px;color:var(--muted);margin-left:8px">Alternativa:</span>
+      <span id="prono_alt_${id}" style="font-size:12px;color:var(--green);font-weight:500">—</span>
+    </div>
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(108,99,255,0.2)">
+      <button onclick="openStoricoModal(${id})" style="background:linear-gradient(135deg,var(--accent),#8b5cf6);color:#fff;border:none;border-radius:8px;padding:10px 18px;font-size:13px;font-weight:600;font-family:'Sora',sans-serif;cursor:pointer;display:flex;align-items:center;gap:8px">
+        📒 Aggiungi allo storico
+      </button>
+    </div>
+  </div>`;
+}
+
+function calcMgTotaleValue(id,i){
+  const m=MG_TOTALE[i];if(!m)return;
+  const d=matchData[id]||{};const prob=d[m.key];
+  const res=document.getElementById(`mgtr_${id}_${i}`);
+  const inp=document.getElementById(`mgtq_${id}_${i}`);
+  if(!res||!inp||prob===undefined)return;
+  const quota=parseFloat(inp.value);
+  if(!quota||quota<1.01){res.textContent='';return;}
+  const impl=Math.round((1/quota)*1000)/10;
+  const diff=Math.round((prob-impl)*10)/10;
+  if(diff>=8){res.textContent=`✓ +${diff}%`;res.style.color='var(--green)';}
+  else if(diff>=2){res.textContent=`≈ +${diff}%`;res.style.color='var(--amber)';}
+  else if(diff>=0){res.textContent='~';res.style.color='var(--amber)';}
+  else{res.textContent=`✗ ${diff}%`;res.style.color='var(--red)';}
+}
+
+function updateLabel(id){
+  const h=document.getElementById('th_'+id)?.value||'Casa';
+  const a=document.getElementById('ta_'+id)?.value||'Ospite';
+  ['lh_','la_','x12_h_','x12_a_'].forEach((p,i)=>{
+    const el=document.getElementById(p+id);if(el)el.textContent=i%2===0?h:a;
+  });
+}
+
+function gv(id,f){const el=document.getElementById(f+'_'+id);const v=parseFloat(el?.value);return isNaN(v)?0:v;}
+function clamp(v,a,b){return Math.min(Math.max(Math.round(v),a),b);}
+function pmf(k,l){let p=Math.exp(-l);for(let i=0;i<k;i++)p*=l/(i+1);return p;}
+function cdf(k,l){let r=0;for(let i=0;i<=k;i++)r+=pmf(i,l);return r;}
+function sig(p){
+  if(p>=75)return['ALTO','sig-alto'];
+  if(p>=60)return['BUONO','sig-buono'];
+  if(p>=50)return['MEDIO','sig-medio'];
+  if(p>=42)return['50/50','sig-eq'];
+  if(p>=30)return['BASSO','sig-basso'];
+  return['RARO','sig-raro'];
+}
+
+function calcTab(id){
+  const gs_h=gv(id,'gs_h'),gc_h=gv(id,'gc_h'),o25_h=gv(id,'o25_h'),btts_h=gv(id,'btts_h'),cs_h=gv(id,'cs_h');
+  const gs_a=gv(id,'gs_a'),gc_a=gv(id,'gc_a'),o25_a=gv(id,'o25_a'),btts_a=gv(id,'btts_a'),cs_a=gv(id,'cs_a');
+  const h2h_avg=gv(id,'h2h_avg'),h2h_o25=gv(id,'h2h_o25'),h2h_btts=gv(id,'h2h_btts');
+  const lv=parseFloat(document.getElementById('comp_'+id)?.value)||1.00;
+  const lam_h=(gs_h+gc_a)/2,lam_a=(gs_a+gc_h)/2,lam_tot=lam_h+lam_a;
+  function blend(pois,s1,s2,h2h){return Math.min((pois*0.35+s1/100*0.30+s2/100*0.25+h2h/100*0.10)*lv*100,97);}
+
+  const pO15=clamp(blend(1-cdf(1,lam_tot),Math.min(o25_h+18,100),Math.min(o25_a+18,100),Math.min(h2h_o25+18,100)),3,97);
+  const pO25=clamp(blend(1-cdf(2,lam_tot),o25_h,o25_a,h2h_o25),3,97);
+  const pO35=clamp(blend(1-cdf(3,lam_tot),Math.max(o25_h-22,0),Math.max(o25_a-22,0),Math.max(h2h_o25-22,0)),3,97);
+  const pO45=clamp(blend(1-cdf(4,lam_tot),Math.max(o25_h-40,0),Math.max(o25_a-40,0),Math.max(h2h_o25-40,0)),3,97);
+  const pO55=clamp(blend(1-cdf(5,lam_tot),Math.max(o25_h-55,0),Math.max(o25_a-55,0),Math.max(h2h_o25-55,0)),3,97);
+  const pU25=clamp(100-pO25,3,97),pU15=clamp(100-pO15,3,97);
+  const pBTTS=clamp(blend((1-cdf(0,lam_h))*(1-cdf(0,lam_a)),btts_h,btts_a,h2h_btts),3,97);
+  const pNG=clamp(100-pBTTS,3,97);
+  const pBO=clamp(Math.round(pBTTS*pO25/100*1.05),3,95);
+
+  const mkts=[
+    {name:'Over 1.5',p:pO15},{name:'Over 2.5',p:pO25},{name:'Over 3.5',p:pO35},
+    {name:'Over 4.5',p:pO45},{name:'Over 5.5',p:pO55},{name:'Under 2.5',p:pU25},
+    {name:'Under 1.5',p:pU15},{name:'BTTS (GG)',p:pBTTS},{name:'No BTTS',p:pNG},
+    {name:'BTTS+Over 2.5',p:pBO},{name:'≥4 gol',p:clamp(pO35*0.85,3,95)},{name:'≥5 gol',p:clamp(pO45*0.85,3,90)},
+  ];
+  marketDataMap[id]=mkts;
+
+  const mg=document.getElementById('mkt_'+id);
+  if(mg)mg.innerHTML=mkts.map((m,i)=>{const[sl,sc]=sig(m.p);return`<div class="mkt" id="mkt_${id}_${i}" onclick="selectMkt(${id},${i})"><div class="mkt-name">${m.name}</div><div class="mkt-pct">${m.p}%</div><span class="mkt-sig ${sc}">${sl}</span></div>`;}).join('');
+
+  rebuildValueRows(id,mkts);
+
+  // aggiorna 1X2
+  const d=matchData[id]||{};
+  const upd=(eid,val)=>{const el=document.getElementById(eid);if(el&&val!==undefined)el.textContent=val+'%';};
+  upd('x12_p1_'+id,d.p1);upd('x12_px_'+id,d.px);upd('x12_p2_'+id,d.p2);
+
+  // aggiorna multigol totale partita
+  MG_TOTALE.forEach((m,i)=>{
+    const val=d[m.key];
+    const vEl=document.getElementById(`mgtv_${id}_${i}`);
+    const bEl=document.getElementById(`mgtbar_${id}_${i}`);
+    if(val!==undefined){
+      const col=val>=60?'var(--green)':val>=42?'var(--amber)':'var(--accent2)';
+      if(vEl){vEl.textContent=val+'%';vEl.style.color=col;}
+      if(bEl){bEl.style.width=Math.min(val,100)+'%';bEl.style.background=col;}
+    }
+  });
+
+  // aggiorna multigol 1T / 2T
+  [['1t',MG_1T],['2t',MG_2T]].forEach(([half,ranges])=>{
+    ranges.forEach((m,i)=>{
+      const val=d[m.key];
+      const vEl=document.getElementById(`mghv_${id}_${half}_${i}`);
+      const bEl=document.getElementById(`mghbar_${id}_${half}_${i}`);
+      if(val!==undefined){
+        const col=val>=50?'var(--green)':val>=30?'var(--amber)':'var(--accent2)';
+        if(vEl){vEl.textContent=val+'%';vEl.style.color=col;}
+        if(bEl){bEl.style.width=Math.min(val,100)+'%';bEl.style.background=col;}
+      }
+    });
+  });
+
+  calcX12Value(id);
+
+  const score=clamp(pO25*0.25+pBTTS*0.20+(lam_tot/5)*100*0.20+((100-cs_h)+(100-cs_a))/2*0.15+h2h_o25*0.10,0,99);
+  const bar=document.getElementById('vbar_'+id);
+  if(bar){bar.style.width=score+'%';bar.style.background=score>=70?'var(--green)':score>=50?'var(--amber)':'var(--red)';}
+  const vt=document.getElementById('vtitle_'+id),vs=document.getElementById('vscore_'+id);
+  if(vt&&vs){if(score>=70){vt.textContent='Segnale forte';vs.style.color='var(--green)';}else if(score>=50){vt.textContent='Segnale moderato';vs.style.color='var(--amber)';}else{vt.textContent='Segnale debole';vs.style.color='var(--red)';}vs.textContent=score+'/100';}
+  const sel=document.getElementById('comp_'+id);
+  const lname=sel?sel.options[sel.selectedIndex].text:'—';
+  const vl=document.getElementById('vlega_'+id);if(vl)vl.textContent=lname+' · λH '+lam_h.toFixed(2)+' λA '+lam_a.toFixed(2);
+  const sorted=[...mkts].sort((a,b)=>b.p-a.p);
+  // Mercato più interessante = MEDIO (50-59%) poi 50/50 (42-49%) — zona value reale
+  const interesting=mkts.filter(m=>m.p>=42&&m.p<60).sort((a,b)=>Math.abs(a.p-53)-Math.abs(b.p-53));
+  const bestMkt=interesting.length?interesting[0]:sorted[0];
+  const secondMkt=interesting.length>1?interesting[1]:sorted.filter(m=>m!==bestMkt)[0];
+  const [bestLabel]=sig(bestMkt.p);
+  const bw=document.getElementById('vbest_'+id);
+  if(bw)bw.innerHTML=`<div class="best-bet"><div class="best-lbl">Mercato più interessante per value</div><div class="best-val">${bestMkt.name} — ${bestMkt.p}% <span style="font-size:11px;opacity:.7">[${bestLabel}]</span></div>${secondMkt?`<div class="best-val" style="opacity:.75;margin-top:3px;font-size:12px">${secondMkt.name} — ${secondMkt.p}%</div>`:''}</div>`;
+  const warns=[];
+  if(o25_h<45||o25_a<45)warns.push('Over 2.5 basso per una squadra — verifica dato contestuale.');
+  if(cs_h>40||cs_a>40)warns.push('Clean sheet alto — considera Under o No BTTS.');
+  if(lam_tot<2.0)warns.push('Lambda basso ('+lam_tot.toFixed(2)+') — partita potenzialmente chiusa.');
+  const ww=document.getElementById('vwarn_'+id);if(ww)ww.innerHTML=warns.map(w=>`<div class="warn">${w}</div>`).join('');
+
+  // RISULTATI ESATTI
+  calcRisultatiEsatti(id, lam_h, lam_a, document.getElementById('th_'+id)?.value||'Casa', document.getElementById('ta_'+id)?.value||'Ospite');
+
+  // PRONOSTICO BILANCIATO
+  calcPronostico(id, {p1:d.p1,px:d.px,p2:d.p2,pO25,pO35,pU25,pBTTS,pNG,pBO,lam_h,lam_a,lam_tot,cs_h,cs_a,btts_h,btts_a,o25_h,o25_a,h2h_o25,h2h_btts,mg2t_12:d.mg2t_12,mg2t_01:d.mg2t_01,mg1t_01:d.mg1t_01,mg1t_12:d.mg1t_12,hn:document.getElementById('th_'+id)?.value||'Casa',an:document.getElementById('ta_'+id)?.value||'Ospite'});
+}
+
+function calcRisultatiEsatti(id, lam_h, lam_a, hn, an){
+  const cont=document.getElementById('res_esatti_'+id);
+  const vcont=document.getElementById('res_value_rows_'+id);
+  if(!cont||!vcont)return;
+  if(!lam_h&&!lam_a){
+    cont.innerHTML='<span style="color:var(--muted);font-size:12px">Inserisci i dati statistici per calcolare i risultati esatti.</span>';
+    return;
+  }
+
+  // Lambda per tempo: tipicamente ~40% dei gol nel 1T, ~60% nel 2T
+  const lam_h_1t=lam_h*0.42, lam_a_1t=lam_a*0.42;
+  const lam_h_2t=lam_h*0.58, lam_a_2t=lam_a*0.58;
+
+  function topResults(lh, la, n){
+    const res=[];
+    for(let h=0;h<=4;h++){
+      for(let a=0;a<=4;a++){
+        const p=Math.round(pmf(h,lh)*pmf(a,la)*10000)/100;
+        res.push({h,a,p,label:`${h}-${a}`});
+      }
+    }
+    return res.sort((a,b)=>b.p-a.p).slice(0,n);
+  }
+
+  const top1t=topResults(lam_h_1t,lam_a_1t,6);
+  const top2t=topResults(lam_h_2t,lam_a_2t,6);
+
+  // Salva quote già inserite
+  const savedQ={};
+  vcont.querySelectorAll('[data-res]').forEach(el=>{
+    const q=el.querySelector('input');
+    if(q&&q.value)savedQ[el.dataset.res]=q.value;
+  });
+
+  function renderHalf(results, halfLabel, halfColor, prefix){
+    const maxP=results[0].p;
+    const cards=results.map((r,i)=>{
+      const barW=Math.round((r.p/maxP)*100);
+      const [sl,sc]=sig(r.p);
+      const rankColor=i===0?halfColor:i<=1?'var(--amber)':'var(--muted)';
+      return`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:8px">
+        <span style="font-family:'DM Mono',monospace;font-size:16px;font-weight:700;color:${rankColor};min-width:32px">${r.label}</span>
+        <div style="flex:1">
+          <div style="background:var(--bg2);border-radius:3px;height:3px;overflow:hidden;margin-bottom:3px">
+            <div style="width:${barW}%;height:3px;background:${rankColor};border-radius:3px"></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px">
+            <span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:${rankColor}">${r.p}%</span>
+            <span class="mkt-sig ${sc}" style="font-size:7px;padding:1px 5px">${sl}</span>
+            <span style="font-size:9px;color:var(--muted)">~${(100/r.p).toFixed(1)}</span>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+    return`<div>
+      <div style="font-size:11px;font-weight:600;color:${halfColor};margin-bottom:8px;text-transform:uppercase;letter-spacing:.07em">${halfLabel}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:0">${cards}</div>
+    </div>`;
+  }
+
+  cont.innerHTML=`
+    <div style="display:flex;flex-direction:column;gap:14px">
+      ${renderHalf(top1t,'🕐 Primo Tempo','var(--amber)','1t')}
+      ${renderHalf(top2t,'🕑 Secondo Tempo','var(--green)','2t')}
+    </div>`;
+
+  // Value rows: 1T poi 2T
+  const allResults=[...top1t.map(r=>({...r,half:'1T'})),...top2t.map(r=>({...r,half:'2T'}))];
+  vcont.innerHTML=allResults.map((r,i)=>{
+    const key=`${r.half}_${r.label}`;
+    const col=r.half==='1T'?'var(--amber)':'var(--green)';
+    return`<div data-res="${key}" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04)">
+      <span style="font-size:9px;font-weight:600;color:${col};min-width:20px;text-transform:uppercase">${r.half}</span>
+      <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--accent2);min-width:32px">${r.label}</span>
+      <span style="font-size:11px;color:var(--muted);min-width:42px">${r.p}%</span>
+      <label style="font-size:11px;color:var(--muted)">Quota:</label>
+      <input type="number" step="0.01" min="1.01" placeholder="—" value="${savedQ[key]||''}"
+        style="width:68px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:4px 7px;font-size:12px;color:var(--text);font-family:'DM Mono',monospace;outline:none;text-align:center"
+        oninput="calcResValue(this,${r.p})">
+      <span class="mg-vres" style="font-size:11px;font-weight:500"></span>
+    </div>`;
+  }).join('');
+}
+
+function calcResValue(inp, prob){
+  const res=inp.parentElement.querySelector('.mg-vres');
+  if(!res)return;
+  const quota=parseFloat(inp.value);
+  if(!quota||quota<1.01){res.textContent='';return;}
+  const impl=Math.round((1/quota)*1000)/10;
+  const diff=Math.round((prob-impl)*10)/10;
+  if(diff>=8){res.textContent=`✓ VALUE +${diff}%`;res.style.color='var(--green)';}
+  else if(diff>=2){res.textContent=`≈ +${diff}%`;res.style.color='var(--amber)';}
+  else if(diff>=0){res.textContent='~';res.style.color='var(--amber)';}
+  else{res.textContent=`✗ ${diff}%`;res.style.color='var(--red)';}
+}
+
+function calcPronostico(id, p){
+  const pm=document.getElementById('prono_main_'+id);
+  const pw=document.getElementById('prono_why_'+id);
+  const pq=document.getElementById('prono_quota_'+id);
+  const pa=document.getElementById('prono_alt_'+id);
+  if(!pm||!pw||!pq||!pa)return;
+
+  // Helper: genera motivazione ricca e contestuale
+  function buildWhy(name, prob, type, extra){
+    const zona=prob>=60?'BUONO':prob>=50?'MEDIO':prob>=42?'50/50':'BASSO';
+    const quotaEst=(100/prob).toFixed(2);
+    const reasons=[];
+
+    if(type==='vittoria_h'){
+      reasons.push(`📊 Probabilità stimata ${prob}% (zona ${zona}) — quota attesa ~${quotaEst}.`);
+      if(extra.lam_h>extra.lam_a) reasons.push(`⚽ Lambda offensivo casa (${extra.lam_h.toFixed(2)}) superiore all'ospite (${extra.lam_a.toFixed(2)}): ${p.hn} produce più gol attesi.`);
+      if(extra.cs_h>=30) reasons.push(`🛡️ ${p.hn} mantiene la porta inviolata nel ${extra.cs_h}% delle gare in casa — difesa affidabile.`);
+      if(extra.p2<35) reasons.push(`📉 Vittoria ospite poco probabile (${extra.p2}%) — ospite debole in trasferta.`);
+      if(extra.p1-extra.p2>=15) reasons.push(`↗️ Vantaggio casa netto di ${extra.p1-extra.p2} punti percentuali rispetto alla vittoria ospite.`);
+    }
+    else if(type==='vittoria_a'){
+      reasons.push(`📊 Probabilità stimata ${prob}% (zona ${zona}) — quota attesa ~${quotaEst}.`);
+      if(extra.lam_a>extra.lam_h) reasons.push(`⚽ Lambda offensivo ospite (${extra.lam_a.toFixed(2)}) superiore alla casa (${extra.lam_h.toFixed(2)}): ${p.an} produce più gol attesi.`);
+      if(extra.cs_a>=25) reasons.push(`🛡️ ${p.an} mantiene la porta inviolata nel ${extra.cs_a}% delle gare in trasferta.`);
+      if(extra.p1<35) reasons.push(`📉 La vittoria casa è poco probabile (${extra.p1}%) — casa debole o ospite molto più forte.`);
+    }
+    else if(type==='pareggio'){
+      reasons.push(`📊 Pareggio al ${prob}% (zona ${zona}) — quota attesa ~${quotaEst}.`);
+      reasons.push(`⚖️ Lambda casa ${extra.lam_h.toFixed(2)} vs ospite ${extra.lam_a.toFixed(2)}: le forze in campo sono bilanciate.`);
+      if(Math.abs(extra.lam_h-extra.lam_a)<0.3) reasons.push(`🎯 Differenza lambda minima (${Math.abs(extra.lam_h-extra.lam_a).toFixed(2)}) — partita molto equilibrata.`);
+      if(extra.px>25) reasons.push(`📈 Con il ${extra.px}% di pareggi stimati, la quota è sistematicamente sovrastimata dai bookmaker su questo tipo di partita.`);
+    }
+    else if(type==='over25'){
+      reasons.push(`📊 Over 2.5 al ${prob}% (zona ${zona}) — quota attesa ~${quotaEst}.`);
+      reasons.push(`⚽ Lambda totale ${extra.lam_tot.toFixed(2)} gol attesi — modello Poisson indica ${prob}% di superare la soglia 2.5.`);
+      if(extra.o25_h>50) reasons.push(`🏠 ${p.hn} supera Over 2.5 nel ${extra.o25_h}% delle gare in casa.`);
+      if(extra.o25_a>50) reasons.push(`✈️ ${p.an} supera Over 2.5 nel ${extra.o25_a}% delle gare in trasferta.`);
+      if(extra.h2h_o25>50) reasons.push(`📋 H2H: ${extra.h2h_o25}% dei precedenti diretti hanno finito Over 2.5.`);
+    }
+    else if(type==='under25'){
+      reasons.push(`📊 Under 2.5 al ${prob}% (zona ${zona}) — quota attesa ~${quotaEst}.`);
+      reasons.push(`🛡️ Lambda totale ${extra.lam_tot.toFixed(2)} — partita con attesa gol moderata.`);
+      if(extra.cs_h>=30) reasons.push(`🏠 ${p.hn} ha il ${extra.cs_h}% di clean sheet in casa — difesa solida.`);
+      if(extra.cs_a>=25) reasons.push(`✈️ ${p.an} tiene la porta inviolata nel ${extra.cs_a}% delle trasferte.`);
+      if(extra.h2h_o25<50) reasons.push(`📋 H2H: solo il ${extra.h2h_o25}% dei precedenti è finito Over 2.5 — storicamente partita chiusa.`);
+    }
+    else if(type==='btts'){
+      reasons.push(`📊 BTTS al ${prob}% (zona ${zona}) — quota attesa ~${quotaEst}.`);
+      if(extra.btts_h>45) reasons.push(`🏠 ${p.hn} segna e subisce in casa nel ${extra.btts_h}% dei casi.`);
+      if(extra.btts_a>45) reasons.push(`✈️ ${p.an} segna e subisce in trasferta nel ${extra.btts_a}% dei casi.`);
+      reasons.push(`⚽ Entrambe le squadre segnano: λ casa ${extra.lam_h.toFixed(2)} e λ ospite ${extra.lam_a.toFixed(2)} indicano attacco attivo su entrambi i fronti.`);
+      if(extra.h2h_btts>50) reasons.push(`📋 H2H: ${extra.h2h_btts}% dei precedenti diretti con BTTS — pattern consolidato.`);
+    }
+    else if(type==='nobtts'){
+      reasons.push(`📊 No BTTS al ${prob}% (zona ${zona}) — quota attesa ~${quotaEst}.`);
+      if(extra.cs_h>=30) reasons.push(`🏠 ${p.hn} non subisce nel ${extra.cs_h}% delle gare in casa — possibile clean sheet.`);
+      if(extra.cs_a>=25) reasons.push(`✈️ ${p.an} mantiene la porta inviolata nel ${extra.cs_a}% delle trasferte.`);
+      reasons.push(`🔒 Almeno una delle due squadre ha difesa solida — probabilità reale che una non segni.`);
+      if(extra.h2h_btts<50) reasons.push(`📋 H2H: solo il ${extra.h2h_btts}% dei precedenti con BTTS — storicamente spesso una squadra non segna.`);
+    }
+    else if(type==='over35'){
+      reasons.push(`📊 Over 3.5 al ${prob}% (zona BASSO) — quota attesa ~${quotaEst}: mercato speculativo.`);
+      reasons.push(`⚽ Lambda totale ${extra.lam_tot.toFixed(2)} — entrambe le difese poco solide rendono possibile lo scenario 4+ gol.`);
+      if(extra.o25_h>55&&extra.o25_a>55) reasons.push(`📈 Entrambe le squadre superano Over 2.5 in oltre metà delle partite — indizio di partite aperte.`);
+    }
+    else if(type==='mg2t12'){
+      reasons.push(`📊 1-2 gol nel 2° tempo al ${prob}% (zona ${zona}) — quota attesa ~${quotaEst}.`);
+      reasons.push(`🕑 Il 2° tempo è storicamente più prolifico: il ${extra.mg2t_12}% delle partite produce 1-2 gol nella ripresa vs il ${extra.mg1t_12}% nel 1° tempo.`);
+      if(extra.mg2t_12>extra.mg1t_12) reasons.push(`📈 Il 2° tempo supera il 1° di ${extra.mg2t_12-extra.mg1t_12} punti percentuali su questo intervallo — tendenza solida.`);
+    }
+    else if(type==='mg1t01'){
+      reasons.push(`📊 0-1 gol nel 1° tempo al ${prob}% (zona ${zona}) — quota attesa ~${quotaEst}.`);
+      reasons.push(`🕐 Il ${prob}% delle partite simili produce 0 o 1 gol nei primi 45 minuti — apertura cauta tipica.`);
+      if(extra.mg1t_01>extra.mg2t_01) reasons.push(`📉 Il 1° tempo è più avaro del 2° (${extra.mg1t_01}% vs ${extra.mg2t_01}% su 0-1 gol) — la partita si apre nella ripresa.`);
+    }
+
+    return reasons.join('\n');
+  }
+
+  const extra={
+    lam_h:p.lam_h,lam_a:p.lam_a,lam_tot:p.lam_tot,
+    cs_h:p.cs_h,cs_a:p.cs_a,
+    btts_h:p.btts_h,btts_a:p.btts_a,
+    o25_h:p.o25_h,o25_a:p.o25_a,
+    h2h_o25:p.h2h_o25,h2h_btts:p.h2h_btts,
+    p1:p.p1,p2:p.p2,px:p.px,
+    mg1t_12:p.mg1t_12||0,mg2t_12:p.mg2t_12||0,
+    mg1t_01:p.mg1t_01||0,mg2t_01:p.mg2t_01||0,
+  };
+
+  const candidates=[];
+  if(p.p1>=42&&p.p1<=65) candidates.push({name:`Vittoria ${p.hn}`,prob:p.p1,quotaEst:(100/p.p1).toFixed(2),type:'vittoria_h'});
+  if(p.px>=30&&p.px<=49) candidates.push({name:'Pareggio',prob:p.px,quotaEst:(100/p.px).toFixed(2),type:'pareggio'});
+  if(p.p2>=42&&p.p2<=65) candidates.push({name:`Vittoria ${p.an}`,prob:p.p2,quotaEst:(100/p.p2).toFixed(2),type:'vittoria_a'});
+  if(p.pO25>=42&&p.pO25<=65) candidates.push({name:'Over 2.5',prob:p.pO25,quotaEst:(100/p.pO25).toFixed(2),type:'over25'});
+  if(p.pU25>=42&&p.pU25<=65) candidates.push({name:'Under 2.5',prob:p.pU25,quotaEst:(100/p.pU25).toFixed(2),type:'under25'});
+  if(p.pBTTS>=42&&p.pBTTS<=65) candidates.push({name:'BTTS (GG)',prob:p.pBTTS,quotaEst:(100/p.pBTTS).toFixed(2),type:'btts'});
+  if(p.pNG>=42&&p.pNG<=65) candidates.push({name:'No BTTS',prob:p.pNG,quotaEst:(100/p.pNG).toFixed(2),type:'nobtts'});
+  if(p.pO35>=30&&p.pO35<=50) candidates.push({name:'Over 3.5',prob:p.pO35,quotaEst:(100/p.pO35).toFixed(2),type:'over35'});
+  if(p.mg2t_12>=42&&p.mg2t_12<=62) candidates.push({name:'Multigol 2T: 1-2 gol',prob:p.mg2t_12,quotaEst:((100/p.mg2t_12)*1.05).toFixed(2),type:'mg2t12'});
+  if(p.mg1t_01>=42&&p.mg1t_01<=65) candidates.push({name:'Multigol 1T: 0-1 gol',prob:p.mg1t_01,quotaEst:((100/p.mg1t_01)*1.05).toFixed(2),type:'mg1t01'});
+
+  if(!candidates.length){
+    pm.textContent='Nessun mercato bilanciato disponibile';
+    pw.innerHTML='<span style="color:var(--muted)">Tutti i mercati hanno probabilità troppo alte o troppo basse. Verifica i dati inseriti.</span>';
+    pq.textContent='—';pa.textContent='—';return;
+  }
+
+  candidates.sort((a,b)=>Math.abs(a.prob-52)-Math.abs(b.prob-52));
+  const best=candidates[0];
+  const alt=candidates[1];
+
+  const whyText=buildWhy(best.name,best.prob,best.type,extra);
+  pm.textContent=`${best.name} — ${best.prob}%`;
+  // Render motivazioni come lista con ritorno a capo
+  pw.innerHTML=whyText.split('\n').map(r=>`<div style="margin-bottom:5px">${r}</div>`).join('');
+  pq.textContent=`~${best.quotaEst}`;
+  pa.textContent=alt?`${alt.name} (${alt.prob}%, ~${alt.quotaEst})`:'—';
+}
+
+function calcX12Value(id){
+  const d=matchData[id]||{};
+  [['1',d.p1,'q1_'+id,'r1_'+id],['X',d.px,'qx_'+id,'rx_'+id],['2',d.p2,'q2_'+id,'r2_'+id]].forEach(([,prob,qid,rid])=>{
+    const res=document.getElementById(rid);if(!res)return;
+    const inp=document.getElementById(qid);if(!inp||prob===undefined)return;
+    const quota=parseFloat(inp.value);
+    if(!quota||quota<1.01){res.textContent='';res.className='x12-result';return;}
+    const impl=Math.round((1/quota)*1000)/10,diff=Math.round((prob-impl)*10)/10;
+    if(diff>=8){res.textContent=`✓ VALUE +${diff}%`;res.className='x12-result x12-val-ok';}
+    else if(diff>=2){res.textContent=`≈ +${diff}%`;res.className='x12-result x12-val-neu';}
+    else if(diff>=0){res.textContent='NEUTRO';res.className='x12-result x12-val-neu';}
+    else{res.textContent=`✗ NO VALUE ${diff}%`;res.className='x12-result x12-val-no';}
+  });
+}
+
+function rebuildValueRows(id,mkts){
+  const saved={};
+  document.querySelectorAll(`#vrows_${id} .vrow`).forEach(row=>{const idx=row.dataset.idx;const inp=row.querySelector('input');if(inp&&inp.value)saved[idx]=inp.value;});
+  const cont=document.getElementById('vrows_'+id);if(!cont)return;
+  cont.innerHTML=mkts.map((m,i)=>`
+    <div class="vrow" data-idx="${i}" id="vrow_${id}_${i}">
+      <div class="vrow-top">
+        <span class="vrow-name">${m.name}</span>
+        <span class="vrow-prob">Stimato: ${m.p}%</span>
+        <div class="vrow-input-wrap"><label>Quota:</label>
+          <input type="number" step="0.01" min="1.01" placeholder="es. 1.85" id="quota_${id}_${i}" value="${saved[i]||''}" oninput="calcValue(${id},${i})" onchange="calcValue(${id},${i})">
+        </div>
+      </div>
+      <div class="vres" id="vres_${id}_${i}"></div>
+    </div>`).join('');
+  Object.keys(saved).forEach(i=>calcValue(id,+i));
+}
+function calcValue(id,i){
+  const mkts=marketDataMap[id];if(!mkts||!mkts[i])return;
+  const m=mkts[i];const inp=document.getElementById(`quota_${id}_${i}`);const res=document.getElementById(`vres_${id}_${i}`);
+  if(!inp||!res)return;const quota=parseFloat(inp.value);
+  if(!quota||quota<1.01){res.className='vres';res.innerHTML='';return;}
+  const impl=Math.round((1/quota)*1000)/10,probSt=m.p,diff=Math.round((probSt-impl)*10)/10;
+  const ev=Math.round(((probSt/100)*quota-(1-(probSt/100)))*100)/100;
+  let bc,bt,detail;
+  if(diff>=8){bc='vb-pos';bt='✓ VALUE';detail=`+${diff}% · EV: +${ev>0?ev:'~0'}`;}
+  else if(diff>=2){bc='vb-neu';bt='MARGINE BASSO';detail=`+${diff}%`;}
+  else if(diff>=0){bc='vb-neu';bt='NEUTRO';detail='Quota allineata';}
+  else{bc='vb-neg';bt='✗ NO VALUE';detail=`${diff}% — troppo caro`;}
+  res.className='vres show';
+  res.innerHTML=`<span class="vbadge ${bc}">${bt}</span><span class="vdetail">Impl: ${impl}% · Stima: ${probSt}% · ${detail}</span>`;
+}
+function selectMkt(id,i){
+  document.querySelectorAll(`#mkt_${id} .mkt`).forEach((el,idx)=>el.classList.toggle('selected',idx===i));
+  const row=document.getElementById(`vrow_${id}_${i}`);if(row)row.scrollIntoView({behavior:'smooth',block:'center'});
+  setTimeout(()=>document.getElementById(`quota_${id}_${i}`)?.focus(),350);
+}
+
+addRow();
+
+// ── STORICO ──────────────────────────────────────────────────────────────
+let storico = JSON.parse(localStorage.getItem('storico_scommesse')||'[]');
+
+function saveStorico(){ try{localStorage.setItem('storico_scommesse',JSON.stringify(storico));}catch(e){} }
+
+function openStoricoModal(id){
+  const d=matchData[id]||{};
+  const hn=document.getElementById('th_'+id)?.value||d.team_h||'Casa';
+  const an=document.getElementById('ta_'+id)?.value||d.team_a||'Ospite';
+  const comp=d.comp||'—';
+  const pm=document.getElementById('prono_main_'+id);
+  const prono=pm?pm.textContent:'—';
+  const pq=document.getElementById('prono_quota_'+id);
+  const quotaStimata=pq?pq.textContent.replace('~',''):'—';
+
+  document.getElementById('modal-partita').textContent=`${hn} vs ${an} (${comp})`;
+  document.getElementById('modal-prono').textContent=prono;
+  document.getElementById('modal-quota-stimata').textContent=quotaStimata;
+  document.getElementById('modal-quota').value='';
+  document.getElementById('modal-stake').value='1';
+  document.getElementById('modal-data').value=new Date().toISOString().slice(0,10);
+  document.getElementById('modal-note').value='';
+  document.getElementById('storico-modal').dataset.matchId=id;
+  document.getElementById('storico-modal').style.display='flex';
+}
+
+function closeModal(){
+  document.getElementById('storico-modal').style.display='none';
+}
+
+function salvaInStorico(){
+  const id=document.getElementById('storico-modal').dataset.matchId;
+  const d=matchData[id]||{};
+  const hn=document.getElementById('th_'+id)?.value||d.team_h||'Casa';
+  const an=document.getElementById('ta_'+id)?.value||d.team_a||'Ospite';
+  const comp=document.getElementById('modal-partita').textContent.split('(')[1]?.replace(')','').trim()||d.comp||'—';
+  const quota=parseFloat(document.getElementById('modal-quota').value);
+  const stake=parseFloat(document.getElementById('modal-stake').value)||1;
+  const prono=document.getElementById('modal-prono').textContent;
+  const data=document.getElementById('modal-data').value;
+  const note=document.getElementById('modal-note').value;
+
+  if(!quota||quota<1.01){alert('Inserisci una quota valida (es. 1.85)');return;}
+
+  storico.push({
+    id:Date.now(),
+    data,
+    partita:`${hn} vs ${an}`,
+    comp:d.comp||'—',
+    prono,
+    quota,
+    stake,
+    note,
+    esito:null,
+    profitto:null
+  });
+  saveStorico();
+  closeModal();
+  renderStorico();
+  // Vai alla tab storico
+  showPage('storico');
+}
+
+function showPage(page){
+  document.getElementById('page-simulatore').style.display=page==='simulatore'?'block':'none';
+  document.getElementById('page-storico').style.display=page==='storico'?'block':'none';
+  document.getElementById('nav-sim').classList.toggle('nav-active',page==='simulatore');
+  document.getElementById('nav-sto').classList.toggle('nav-active',page==='storico');
+  if(page==='storico')renderStorico();
+}
+
+function setEsito(storId, esito){
+  const entry=storico.find(s=>s.id===storId);
+  if(!entry)return;
+  entry.esito=esito;
+  entry.profitto=esito==='V'?Math.round((entry.quota-1)*entry.stake*100)/100:esito==='P'?-entry.stake:0;
+  saveStorico();
+  renderStorico();
+}
+
+function deleteEntry(storId){
+  storico=storico.filter(s=>s.id!==storId);
+  saveStorico();
+  renderStorico();
+}
+
+function renderStorico(){
+  const cont=document.getElementById('storico-list');
+  if(!cont)return;
+  if(!storico.length){
+    cont.innerHTML='<div style="text-align:center;color:var(--muted);padding:40px;font-size:13px">Nessuna scommessa salvata ancora.<br>Usa il pulsante "📒 Aggiungi allo storico" nel pronostico consigliato.</div>';
+    updateStoricoDashboard();
+    return;
+  }
+  const sorted=[...storico].sort((a,b)=>b.id-a.id);
+  cont.innerHTML=sorted.map(s=>{
+    const esitoColor=s.esito==='V'?'var(--green)':s.esito==='P'?'var(--red)':'var(--muted)';
+    const esitoLabel=s.esito==='V'?'✓ WIN':s.esito==='P'?'✗ LOSS':s.esito==='N'?'~ VOID':'⏳ Aperta';
+    const profittoStr=s.profitto!==null?(s.profitto>=0?'+':'')+s.profitto+'€':'—';
+    return`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:8px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600;color:var(--text)">${s.partita}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${s.comp} · ${s.data}</div>
+          <div style="font-size:12px;color:var(--accent2);margin-top:5px;font-weight:500">${s.prono}</div>
+          ${s.note?`<div style="font-size:11px;color:var(--muted);margin-top:3px;font-style:italic">${s.note}</div>`:''}
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-family:'DM Mono',monospace;font-size:18px;font-weight:700;color:${esitoColor}">${esitoLabel}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:13px;color:${s.profitto>0?'var(--green)':s.profitto<0?'var(--red)':'var(--muted)'};">${profittoStr}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Q: ${s.quota} · Stake: ${s.stake}€</div>
+        </div>
+      </div>
+      ${s.esito===null?`<div style="display:flex;gap:6px;margin-top:10px">
+        <button onclick="setEsito(${s.id},'V')" style="flex:1;padding:7px;background:rgba(52,211,153,0.15);color:var(--green);border:1px solid rgba(52,211,153,0.3);border-radius:7px;font-size:12px;font-weight:600;cursor:pointer">✓ Win</button>
+        <button onclick="setEsito(${s.id},'P')" style="flex:1;padding:7px;background:rgba(248,113,113,0.15);color:var(--red);border:1px solid rgba(248,113,113,0.3);border-radius:7px;font-size:12px;font-weight:600;cursor:pointer">✗ Loss</button>
+        <button onclick="setEsito(${s.id},'N')" style="flex:1;padding:7px;background:rgba(251,191,36,0.12);color:var(--amber);border:1px solid rgba(251,191,36,0.3);border-radius:7px;font-size:12px;font-weight:600;cursor:pointer">~ Void</button>
+        <button onclick="deleteEntry(${s.id})" style="padding:7px 10px;background:rgba(248,113,113,0.1);color:var(--red);border:1px solid rgba(248,113,113,0.2);border-radius:7px;font-size:12px;cursor:pointer">🗑</button>
+      </div>`:`<div style="display:flex;justify-content:flex-end;margin-top:8px"><button onclick="deleteEntry(${s.id})" style="padding:5px 10px;background:rgba(248,113,113,0.1);color:var(--red);border:1px solid rgba(248,113,113,0.2);border-radius:6px;font-size:11px;cursor:pointer">🗑 Rimuovi</button></div>`}
+    </div>`;
+  }).join('');
+  updateStoricoDashboard();
+}
+
+function updateStoricoDashboard(){
+  const chiuse=storico.filter(s=>s.esito!==null&&s.esito!=='N');
+  const vinte=chiuse.filter(s=>s.esito==='V');
+  const perse=chiuse.filter(s=>s.esito==='P');
+  const totStake=storico.filter(s=>s.esito!==null&&s.esito!=='N').reduce((a,s)=>a+s.stake,0);
+  const profTot=chiuse.reduce((a,s)=>a+(s.profitto||0),0);
+  const roi=totStake>0?Math.round((profTot/totStake)*100):0;
+  const aperte=storico.filter(s=>s.esito===null).length;
+
+  const set=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;};
+  set('sto-vinte',vinte.length);
+  set('sto-perse',perse.length);
+  set('sto-aperte',aperte);
+  set('sto-profitto',(profTot>=0?'+':'')+profTot.toFixed(2)+'€');
+  set('sto-roi',roi+'%');
+  set('sto-winrate',chiuse.length?Math.round(vinte.length/chiuse.length*100)+'%':'—');
+  const pel=document.getElementById('sto-profitto');
+  if(pel)pel.style.color=profTot>0?'var(--green)':profTot<0?'var(--red)':'var(--muted)';
+}
+</script>
+
+<!-- MODAL AGGIUNGI STORICO -->
+</div><!-- /page-simulatore -->
+<div id="storico-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:20px;padding:24px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="font-size:14px;font-weight:600;color:var(--accent2)">📒 Aggiungi allo storico</div>
+      <button onclick="closeModal()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px" id="modal-partita">—</div>
+    <div style="font-size:12px;color:var(--accent2);margin-bottom:16px;padding:8px;background:rgba(108,99,255,0.1);border-radius:8px">
+      🎯 Pronostico: <span id="modal-prono" style="font-weight:600">—</span>
+      <span style="color:var(--muted);margin-left:8px">· Quota attesa: <span id="modal-quota-stimata" style="color:var(--amber)">—</span></span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div>
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em">Quota bookmaker</label>
+        <input type="number" id="modal-quota" step="0.01" min="1.01" placeholder="es. 1.85"
+          style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;font-size:14px;color:var(--text);font-family:'DM Mono',monospace;outline:none">
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em">Stake (€)</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <button onclick="document.getElementById('modal-stake').value='1';highlightStake(1)"
+            id="stake-btn-1" style="padding:10px;background:rgba(108,99,255,0.2);color:var(--accent2);border:1px solid var(--accent);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">
+            🎯 Base (1€)<br><span style="font-size:10px;font-weight:400;opacity:.7">Affidabilità normale</span>
+          </button>
+          <button onclick="document.getElementById('modal-stake').value='2';highlightStake(2)"
+            id="stake-btn-2" style="padding:10px;background:var(--bg3);color:var(--muted);border:1px solid var(--border2);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">
+            🔥 Doppio (2€)<br><span style="font-size:10px;font-weight:400;opacity:.7">Alta affidabilità</span>
+          </button>
+        </div>
+        <input type="number" id="modal-stake" step="0.5" min="0.5" placeholder="oppure inserisci manuale"
+          style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);font-family:'DM Mono',monospace;outline:none">
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em">Data partita</label>
+        <input type="date" id="modal-data"
+          style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--text);outline:none">
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em">Note (opzionale)</label>
+        <input type="text" id="modal-note" placeholder="es. partita secca, buona quota..."
+          style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--text);outline:none">
+      </div>
+      <button onclick="salvaInStorico()"
+        style="width:100%;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;font-family:'Sora',sans-serif;cursor:pointer;margin-top:4px">
+        💾 Salva nel registro
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- PAGINA STORICO -->
+<div id="page-storico" style="display:none">
+  <div style="max-width:980px;margin:0 auto;padding:24px 20px 60px">
+    <div style="margin-bottom:20px">
+      <div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:4px">📒 Registro scommesse</div>
+      <div style="font-size:12px;color:var(--muted)">Segna Win/Loss per aggiornare il bilancio mensile</div>
+    </div>
+    <!-- DASHBOARD -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Profitto</div>
+        <div style="font-family:'DM Mono',monospace;font-size:22px;font-weight:700" id="sto-profitto">—</div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Win Rate</div>
+        <div style="font-family:'DM Mono',monospace;font-size:22px;font-weight:700;color:var(--accent2)" id="sto-winrate">—</div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">ROI</div>
+        <div style="font-family:'DM Mono',monospace;font-size:22px;font-weight:700;color:var(--amber)" id="sto-roi">—</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px">
+      <div style="background:var(--green-bg);border:1px solid rgba(52,211,153,0.2);border-radius:10px;padding:10px;text-align:center">
+        <div style="font-size:10px;color:var(--green);text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px">Win</div>
+        <div style="font-family:'DM Mono',monospace;font-size:20px;font-weight:700;color:var(--green)" id="sto-vinte">0</div>
+      </div>
+      <div style="background:var(--red-bg);border:1px solid rgba(248,113,113,0.2);border-radius:10px;padding:10px;text-align:center">
+        <div style="font-size:10px;color:var(--red);text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px">Loss</div>
+        <div style="font-family:'DM Mono',monospace;font-size:20px;font-weight:700;color:var(--red)" id="sto-perse">0</div>
+      </div>
+      <div style="background:var(--amber-bg);border:1px solid rgba(251,191,36,0.2);border-radius:10px;padding:10px;text-align:center">
+        <div style="font-size:10px;color:var(--amber);text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px">Aperte</div>
+        <div style="font-family:'DM Mono',monospace;font-size:20px;font-weight:700;color:var(--amber)" id="sto-aperte">0</div>
+      </div>
+    </div>
+    <div id="storico-list"></div>
+  </div>
+</div>
+
+<script>
+function highlightStake(v){
+  document.getElementById('stake-btn-1').style.background=v===1?'rgba(108,99,255,0.2)':'var(--bg3)';
+  document.getElementById('stake-btn-1').style.color=v===1?'var(--accent2)':'var(--muted)';
+  document.getElementById('stake-btn-1').style.borderColor=v===1?'var(--accent)':'var(--border2)';
+  document.getElementById('stake-btn-2').style.background=v===2?'rgba(52,211,153,0.15)':'var(--bg3)';
+  document.getElementById('stake-btn-2').style.color=v===2?'var(--green)':'var(--muted)';
+  document.getElementById('stake-btn-2').style.borderColor=v===2?'var(--green)':'var(--border2)';
+}
+// Chiudi modal cliccando fuori
+document.getElementById('storico-modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+renderStorico();
+</script>
